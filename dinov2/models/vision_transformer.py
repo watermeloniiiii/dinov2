@@ -17,7 +17,7 @@ import torch.nn as nn
 import torch.utils.checkpoint
 from torch.nn.init import trunc_normal_
 
-from dinov2.layers import Mlp, PatchEmbed, SwiGLUFFNFused, MemEffAttention, NestedTensorBlock as Block
+from dinov2.layers import Mlp, PatchEmbed, SwiGLUFFNFused, MemEffAttention, Attention, NestedTensorBlock as Block
 
 
 logger = logging.getLogger("dinov2")
@@ -92,7 +92,9 @@ class DinoVisionTransformer(nn.Module):
             interpolate_offset: (float) work-around offset to apply when interpolating positional embeddings
         """
         super().__init__()
-        norm_layer = partial(nn.LayerNorm, eps=1e-6)
+        norm_layer = partial(
+            nn.LayerNorm, eps=1e-6
+        )  # by using functools.partial(), you do not have specify "eps" each time you call "norm_layer"
 
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         self.num_tokens = 1
@@ -116,7 +118,9 @@ class DinoVisionTransformer(nn.Module):
         if drop_path_uniform is True:
             dpr = [drop_path_rate] * depth
         else:
-            dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
+            dpr = [
+                x.item() for x in torch.linspace(0, drop_path_rate, depth)
+            ]  # stochastic depth decay rule, len(dpr) = 24, drop a layer
 
         if ffn_layer == "mlp":
             logger.info("using MLP layer as FFN")
@@ -176,6 +180,20 @@ class DinoVisionTransformer(nn.Module):
             nn.init.normal_(self.register_tokens, std=1e-6)
         named_apply(init_weights_vit_timm, self)
 
+    def temporal_encoding(self, x, doy):
+        bs, _, d_model = x.shape
+        expand_scale = bs // len(doy)
+        doy = doy.repeat(expand_scale)
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+        ).cuda()  # (1, d_model // 2)
+        pe = torch.zeros(bs, 1, d_model, dtype=x.dtype).cuda()
+        pe[:, :, 0::2] = torch.sin(doy.unsqueeze(1).repeat(1, d_model // 2) * div_term).unsqueeze(1)
+        pe[:, :, 1::2] = torch.cos(doy.unsqueeze(1).repeat(1, d_model // 2) * div_term).unsqueeze(1)
+        self.register_buffer("pe", pe)
+        return pe
+
+
     def interpolate_pos_encoding(self, x, w, h):
         previous_dtype = x.dtype
         npatch = x.shape[1] - 1
@@ -210,14 +228,15 @@ class DinoVisionTransformer(nn.Module):
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1).to(previous_dtype)
 
-    def prepare_tokens_with_masks(self, x, masks=None):
+    def prepare_tokens_with_masks(self, x, masks=None, tag=None, doy=None):
         B, nc, w, h = x.shape
-        x = self.patch_embed(x)
+        x = self.patch_embed(x) # (bs, 1024, 768)， 1024=32*32, denotes a 512*512 image has 1024 16*16 patches
         if masks is not None:
             x = torch.where(masks.unsqueeze(-1), self.mask_token.to(x.dtype).unsqueeze(0), x)
 
-        x = torch.cat((self.cls_token.expand(x.shape[0], -1, -1), x), dim=1)
-        x = x + self.interpolate_pos_encoding(x, w, h)
+        x = torch.cat((self.cls_token.expand(x.shape[0], -1, -1), x), dim=1) # (bs, 1025, 768)
+        x = x + self.interpolate_pos_encoding(x, w, h) # (bs, 1025, 768)
+        x = x + self.temporal_encoding(x, doy)
 
         if self.register_tokens is not None:
             x = torch.cat(
@@ -231,8 +250,8 @@ class DinoVisionTransformer(nn.Module):
 
         return x
 
-    def forward_features_list(self, x_list, masks_list):
-        x = [self.prepare_tokens_with_masks(x, masks) for x, masks in zip(x_list, masks_list)]
+    def forward_features_list(self, x_list, masks_list, tag=None, doy=None):
+        x = [self.prepare_tokens_with_masks(x, masks, tag, doy) for x, masks in zip(x_list, masks_list)]
         for blk in self.blocks:
             x = blk(x)
 
@@ -251,11 +270,11 @@ class DinoVisionTransformer(nn.Module):
             )
         return output
 
-    def forward_features(self, x, masks=None):
+    def forward_features(self, x, masks=None, tag=None, doy=None):
         if isinstance(x, list):
-            return self.forward_features_list(x, masks)
+            return self.forward_features_list(x, masks, tag, doy)
 
-        x = self.prepare_tokens_with_masks(x, masks)
+        x = self.prepare_tokens_with_masks(x, masks, tag, doy)
 
         for blk in self.blocks:
             x = blk(x)
@@ -269,8 +288,8 @@ class DinoVisionTransformer(nn.Module):
             "masks": masks,
         }
 
-    def _get_intermediate_layers_not_chunked(self, x, n=1):
-        x = self.prepare_tokens_with_masks(x)
+    def _get_intermediate_layers_not_chunked(self, x, n=1, doy=None):
+        x = self.prepare_tokens_with_masks(x, doy=doy)
         # If n is an int, take the n last blocks. If it's a list, take them
         output, total_block_len = [], len(self.blocks)
         blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
@@ -281,8 +300,8 @@ class DinoVisionTransformer(nn.Module):
         assert len(output) == len(blocks_to_take), f"only {len(output)} / {len(blocks_to_take)} blocks found"
         return output
 
-    def _get_intermediate_layers_chunked(self, x, n=1):
-        x = self.prepare_tokens_with_masks(x)
+    def _get_intermediate_layers_chunked(self, x, n=1, doy=None):
+        x = self.prepare_tokens_with_masks(x, doy=doy)
         output, i, total_block_len = [], 0, len(self.blocks[-1])
         # If n is an int, take the n last blocks. If it's a list, take them
         blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
@@ -302,11 +321,12 @@ class DinoVisionTransformer(nn.Module):
         reshape: bool = False,
         return_class_token: bool = False,
         norm=True,
+        doy=None
     ) -> Tuple[Union[torch.Tensor, Tuple[torch.Tensor]]]:
         if self.chunked_blocks:
-            outputs = self._get_intermediate_layers_chunked(x, n)
+            outputs = self._get_intermediate_layers_chunked(x, n, doy=doy)
         else:
-            outputs = self._get_intermediate_layers_not_chunked(x, n)
+            outputs = self._get_intermediate_layers_not_chunked(x, n, doy=doy)
         if norm:
             outputs = [self.norm(out) for out in outputs]
         class_tokens = [out[:, 0] for out in outputs]
@@ -320,6 +340,25 @@ class DinoVisionTransformer(nn.Module):
         if return_class_token:
             return tuple(zip(outputs, class_tokens))
         return tuple(outputs)
+
+    def get_last_self_attention(self, x, masks=None):
+        if isinstance(x, list):
+            return self.forward_features_list(x, masks)
+
+        x = self.prepare_tokens_with_masks(x, masks)
+
+        # Run through model, at the last block just return the attention.
+        for i, blk in enumerate(self.blocks):
+            if i < len(self.blocks) - 1:
+                x = blk(x)
+            else:
+                if isinstance(blk, BlockChunk):
+                    for j, nested_blk in enumerate(blk):
+                        if j < len(blk) - 1:
+                            x = nested_blk(x)
+                        else:
+                            return nested_blk(x, True)
+                        
 
     def forward(self, *args, is_training=False, **kwargs):
         ret = self.forward_features(*args, **kwargs)

@@ -41,6 +41,8 @@ class MaybeToTensor(transforms.ToTensor):
 # Use timm's names
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
+SENTINEL2_DEFAULT_MEAN = (0.3584, 0.3111, 0.2654, 0.2578, 0.3299, 0.3653, 0.3547, 0.2965, 0.2266)
+SENTINEL2_DEFAULT_STD = (0.064, 0.072, 0.0095, 0.048, 0.067, 0.080, 0.085, 0.074, 0.060)
 
 
 def make_normalize_transform(
@@ -85,6 +87,45 @@ def make_classification_eval_transform(
     transforms_list = [
         transforms.Resize(resize_size, interpolation=interpolation),
         transforms.CenterCrop(crop_size),
+        MaybeToTensor(),
+        make_normalize_transform(mean=mean, std=std),
+    ]
+    return transforms.Compose(transforms_list)
+
+def make_classification_train_transform_Sentinel2(
+    *,
+    crop_size: int = 224,
+    interpolation=transforms.InterpolationMode.BICUBIC,
+    hflip_prob: float = 0.5,
+    mean: Sequence[float] = SENTINEL2_DEFAULT_MEAN,
+    std: Sequence[float] = SENTINEL2_DEFAULT_STD,
+):
+    # transforms_list = [transforms.RandomResizedCrop(crop_size, interpolation=interpolation)]
+    transforms_list = []
+    if hflip_prob > 0.0:
+        transforms_list.append(transforms.RandomHorizontalFlip(hflip_prob))
+    transforms_list.extend(
+        [
+            MaybeToTensor(),
+            make_normalize_transform(mean=mean, std=std),
+        ]
+    )
+    return transforms.Compose(transforms_list)
+
+
+# This matches (roughly) torchvision's preset for classification evaluation:
+#   https://github.com/pytorch/vision/blob/main/references/classification/presets.py#L47-L69
+def make_classification_eval_transform_Sentinel2(
+    *,
+    resize_size: int = 256,
+    interpolation=transforms.InterpolationMode.BICUBIC,
+    crop_size: int = 224,
+    mean: Sequence[float] = SENTINEL2_DEFAULT_MEAN,
+    std: Sequence[float] = SENTINEL2_DEFAULT_STD,
+) -> transforms.Compose:
+    transforms_list = [
+        # transforms.Resize(resize_size, interpolation=interpolation),
+        # transforms.CenterCrop(crop_size),
         MaybeToTensor(),
         make_normalize_transform(mean=mean, std=std),
     ]

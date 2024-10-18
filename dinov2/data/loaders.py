@@ -10,7 +10,13 @@ from typing import Any, Callable, List, Optional, TypeVar
 import torch
 from torch.utils.data import Sampler
 
-from .datasets import ImageNet, ImageNet22k
+from .datasets import (
+    ImageNet,
+    ImageNet22k,
+    PretrainSentinel2Dataset,
+    ClusterSentinel2Dataset,
+    SegmentationSentinel2Dataset,
+)
 from .samplers import EpochSampler, InfiniteSampler, ShardedInfiniteSampler
 
 
@@ -58,6 +64,18 @@ def _parse_dataset_str(dataset_str: str):
             kwargs["split"] = ImageNet.Split[kwargs["split"]]
     elif name == "ImageNet22k":
         class_ = ImageNet22k
+    elif name == "Sentinel2":
+        class_ = PretrainSentinel2Dataset
+        if "split" in kwargs:
+            kwargs["split"] = PretrainSentinel2Dataset.Split[kwargs["split"]]
+    elif name == "ClusterSentinel2":
+        class_ = ClusterSentinel2Dataset
+        if "split" in kwargs:
+            kwargs["split"] = ClusterSentinel2Dataset.Split[kwargs["split"]]
+    elif name == "SegmentationSentinel2":
+        class_ = SegmentationSentinel2Dataset
+        if "split" in kwargs:
+            kwargs["split"] = SegmentationSentinel2Dataset.Split[kwargs["split"]]
     else:
         raise ValueError(f'Unsupported dataset "{name}"')
 

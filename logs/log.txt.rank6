@@ -1,0 +1,658 @@
+I20240613 14:24:27 3865242 dinov2 config.py:59] git:
+  sha: e1277af2ba9496fbadf7aec6eba56e8d882d1e35, status: has uncommitted changes, branch: main
+
+I20240613 14:24:27 3865242 dinov2 config.py:60] batch_size: 128
+classifier_fpath: None
+config_file: dinov2/configs/eval/vits14_pretrain.yaml
+epoch_length: 1250
+epochs: 10
+eval_period_iterations: 1250
+learning_rates: [1e-05, 2e-05, 5e-05, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+local_rank: 6
+no_resume: False
+num_workers: 8
+opts: ['train.output_dir=/NAS6/Members/linchenxi/dinov2']
+output_dir: /NAS6/Members/linchenxi/dinov2
+pretrained_weights: /NAS6/Members/linchenxi/dinov2/pretrained_models/dinov2_vits14_pretrain.pth
+save_checkpoint_frequency: 20
+test_class_mapping_fpaths: [None]
+test_dataset_strs: None
+test_metric_types: None
+train_dataset_str: ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC
+val_class_mapping_fpath: None
+val_dataset_str: ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC
+val_metric_type: mean_accuracy
+I20240613 14:24:27 3865242 dinov2 config.py:26] sqrt scaling learning rate; base: 0.004, new: 0.0028284271247461905
+I20240613 14:24:27 3865242 dinov2 config.py:33] MODEL:
+  WEIGHTS: ''
+compute_precision:
+  grad_scaler: true
+  teacher:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+  student:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+dino:
+  loss_weight: 1.0
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+  koleo_loss_weight: 0.1
+ibot:
+  loss_weight: 1.0
+  mask_sample_probability: 0.5
+  mask_ratio_min_max:
+  - 0.1
+  - 0.5
+  separate_head: false
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+train:
+  batch_size_per_gpu: 64
+  dataset_path: ImageNet:split=TRAIN
+  output_dir: /NAS6/Members/linchenxi/dinov2
+  saveckp_freq: 20
+  seed: 0
+  num_workers: 10
+  OFFICIAL_EPOCH_LENGTH: 1250
+  cache_dataset: true
+  centering: centering
+student:
+  arch: vit_small
+  patch_size: 14
+  drop_path_rate: 0.3
+  layerscale: 1.0e-05
+  drop_path_uniform: true
+  pretrained_weights: ''
+  ffn_layer: mlp
+  block_chunks: 0
+  qkv_bias: true
+  proj_bias: true
+  ffn_bias: true
+  num_register_tokens: 0
+  interpolate_antialias: false
+  interpolate_offset: 0.1
+teacher:
+  momentum_teacher: 0.992
+  final_momentum_teacher: 1
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 30
+optim:
+  epochs: 100
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+  base_lr: 0.004
+  lr: 0.0028284271247461905
+  warmup_epochs: 10
+  min_lr: 1.0e-06
+  clip_grad: 3.0
+  freeze_last_layer_epochs: 1
+  scaling_rule: sqrt_wrt_1024
+  patch_embed_lr_mult: 0.2
+  layerwise_decay: 0.9
+  adamw_beta1: 0.9
+  adamw_beta2: 0.999
+crops:
+  global_crops_scale:
+  - 0.32
+  - 1.0
+  local_crops_number: 8
+  local_crops_scale:
+  - 0.05
+  - 0.32
+  global_crops_size: 518
+  local_crops_size: 98
+evaluation:
+  eval_period_iterations: 12500
+
+I20240613 14:24:27 3865242 dinov2 vision_transformer.py:126] using MLP layer as FFN
+I20240613 14:24:27 3865242 dinov2 utils.py:33] Pretrained weights found at /NAS6/Members/linchenxi/dinov2/pretrained_models/dinov2_vits14_pretrain.pth and loaded with msg: <All keys matched successfully>
+I20240613 14:24:27 3865242 dinov2 loaders.py:84] using dataset: "ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC"
+I20240613 14:24:27 3865242 dinov2 loaders.py:89] # of dataset samples: 1,281,167
+I20240613 14:33:54 3867790 dinov2 config.py:59] git:
+  sha: e1277af2ba9496fbadf7aec6eba56e8d882d1e35, status: has uncommitted changes, branch: main
+
+I20240613 14:33:54 3867790 dinov2 config.py:60] batch_size: 128
+classifier_fpath: None
+config_file: dinov2/configs/eval/vits14_pretrain.yaml
+epoch_length: 1250
+epochs: 10
+eval_period_iterations: 1250
+learning_rates: [1e-05, 2e-05, 5e-05, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+local_rank: 6
+no_resume: False
+num_workers: 8
+opts: ['train.output_dir=/NAS6/Members/linchenxi/dinov2']
+output_dir: /NAS6/Members/linchenxi/dinov2
+pretrained_weights: /NAS6/Members/linchenxi/dinov2/pretrained_models/dinov2_vits14_pretrain.pth
+save_checkpoint_frequency: 20
+test_class_mapping_fpaths: [None]
+test_dataset_strs: None
+test_metric_types: None
+train_dataset_str: ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC
+val_class_mapping_fpath: None
+val_dataset_str: ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC
+val_metric_type: mean_accuracy
+I20240613 14:33:54 3867790 dinov2 config.py:26] sqrt scaling learning rate; base: 0.004, new: 0.0028284271247461905
+I20240613 14:33:54 3867790 dinov2 config.py:33] MODEL:
+  WEIGHTS: ''
+compute_precision:
+  grad_scaler: true
+  teacher:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+  student:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+dino:
+  loss_weight: 1.0
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+  koleo_loss_weight: 0.1
+ibot:
+  loss_weight: 1.0
+  mask_sample_probability: 0.5
+  mask_ratio_min_max:
+  - 0.1
+  - 0.5
+  separate_head: false
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+train:
+  batch_size_per_gpu: 64
+  dataset_path: ImageNet:split=TRAIN
+  output_dir: /NAS6/Members/linchenxi/dinov2
+  saveckp_freq: 20
+  seed: 0
+  num_workers: 10
+  OFFICIAL_EPOCH_LENGTH: 1250
+  cache_dataset: true
+  centering: centering
+student:
+  arch: vit_small
+  patch_size: 14
+  drop_path_rate: 0.3
+  layerscale: 1.0e-05
+  drop_path_uniform: true
+  pretrained_weights: ''
+  ffn_layer: mlp
+  block_chunks: 0
+  qkv_bias: true
+  proj_bias: true
+  ffn_bias: true
+  num_register_tokens: 0
+  interpolate_antialias: false
+  interpolate_offset: 0.1
+teacher:
+  momentum_teacher: 0.992
+  final_momentum_teacher: 1
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 30
+optim:
+  epochs: 100
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+  base_lr: 0.004
+  lr: 0.0028284271247461905
+  warmup_epochs: 10
+  min_lr: 1.0e-06
+  clip_grad: 3.0
+  freeze_last_layer_epochs: 1
+  scaling_rule: sqrt_wrt_1024
+  patch_embed_lr_mult: 0.2
+  layerwise_decay: 0.9
+  adamw_beta1: 0.9
+  adamw_beta2: 0.999
+crops:
+  global_crops_scale:
+  - 0.32
+  - 1.0
+  local_crops_number: 8
+  local_crops_scale:
+  - 0.05
+  - 0.32
+  global_crops_size: 518
+  local_crops_size: 98
+evaluation:
+  eval_period_iterations: 12500
+
+I20240613 14:33:54 3867790 dinov2 vision_transformer.py:126] using MLP layer as FFN
+I20240614 10:11:53 43742 dinov2 config.py:59] git:
+  sha: e1277af2ba9496fbadf7aec6eba56e8d882d1e35, status: has uncommitted changes, branch: main
+
+I20240614 10:11:53 43742 dinov2 config.py:60] batch_size: 256
+config_file: dinov2/configs/eval/vits14_pretrain.yaml
+gather_on_cpu: False
+local_rank: 6
+n_per_class_list: [-1]
+n_tries: 1
+nb_knn: [10, 20, 100, 200]
+opts: ['train.output_dir=/NAS6/Members/linchenxi/dinov2']
+output_dir: /NAS6/Members/linchenxi/dinov2
+pretrained_weights: /NAS6/Members/linchenxi/dinov2/pretrained_models/dinov2_vits14_pretrain.pth
+temperature: 0.07
+train_dataset_str: ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC
+val_dataset_str: ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC
+I20240614 10:11:53 43742 dinov2 config.py:26] sqrt scaling learning rate; base: 0.004, new: 0.0028284271247461905
+I20240614 10:11:53 43742 dinov2 config.py:33] MODEL:
+  WEIGHTS: ''
+compute_precision:
+  grad_scaler: true
+  teacher:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+  student:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+dino:
+  loss_weight: 1.0
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+  koleo_loss_weight: 0.1
+ibot:
+  loss_weight: 1.0
+  mask_sample_probability: 0.5
+  mask_ratio_min_max:
+  - 0.1
+  - 0.5
+  separate_head: false
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+train:
+  batch_size_per_gpu: 64
+  dataset_path: ImageNet:split=TRAIN
+  output_dir: /NAS6/Members/linchenxi/dinov2
+  saveckp_freq: 20
+  seed: 0
+  num_workers: 10
+  OFFICIAL_EPOCH_LENGTH: 1250
+  cache_dataset: true
+  centering: centering
+student:
+  arch: vit_small
+  patch_size: 14
+  drop_path_rate: 0.3
+  layerscale: 1.0e-05
+  drop_path_uniform: true
+  pretrained_weights: ''
+  ffn_layer: mlp
+  block_chunks: 0
+  qkv_bias: true
+  proj_bias: true
+  ffn_bias: true
+  num_register_tokens: 0
+  interpolate_antialias: false
+  interpolate_offset: 0.1
+teacher:
+  momentum_teacher: 0.992
+  final_momentum_teacher: 1
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 30
+optim:
+  epochs: 100
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+  base_lr: 0.004
+  lr: 0.0028284271247461905
+  warmup_epochs: 10
+  min_lr: 1.0e-06
+  clip_grad: 3.0
+  freeze_last_layer_epochs: 1
+  scaling_rule: sqrt_wrt_1024
+  patch_embed_lr_mult: 0.2
+  layerwise_decay: 0.9
+  adamw_beta1: 0.9
+  adamw_beta2: 0.999
+crops:
+  global_crops_scale:
+  - 0.32
+  - 1.0
+  local_crops_number: 8
+  local_crops_scale:
+  - 0.05
+  - 0.32
+  global_crops_size: 518
+  local_crops_size: 98
+evaluation:
+  eval_period_iterations: 12500
+
+I20240614 10:11:53 43742 dinov2 vision_transformer.py:126] using MLP layer as FFN
+I20240614 10:11:54 43742 dinov2 utils.py:33] Pretrained weights found at /NAS6/Members/linchenxi/dinov2/pretrained_models/dinov2_vits14_pretrain.pth and loaded with msg: <All keys matched successfully>
+I20240614 10:11:54 43742 dinov2 loaders.py:84] using dataset: "ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC"
+I20240614 10:11:54 43742 dinov2 loaders.py:89] # of dataset samples: 1,281,167
+I20240614 10:11:54 43742 dinov2 loaders.py:84] using dataset: "ImageNet:split=TRAIN:root=/NAS6/Members/linchenxi/ILSVRC:extra=/NAS6/Members/linchenxi/ILSVRC"
+I20240614 10:11:54 43742 dinov2 loaders.py:89] # of dataset samples: 1,281,167
+I20240614 10:11:54 43742 dinov2 knn.py:262] Extracting features for train set...
+I20240614 10:11:54 43742 dinov2 loaders.py:147] sampler: distributed
+I20240614 10:11:54 43742 dinov2 loaders.py:206] using PyTorch data loader
+I20240614 10:11:54 43742 dinov2 loaders.py:219] # of batches: 626
+I20240614 10:12:02 43742 dinov2 utils.py:129] Storing features into tensor of shape torch.Size([1281167, 384])
+I20240614 10:12:02 43742 dinov2 helpers.py:102]   [  0/626]  eta: 1:32:34    time: 8.873009  data: 6.981485  max mem: 2178
+I20240614 10:12:23 43742 dinov2 helpers.py:102]   [ 10/626]  eta: 0:27:04    time: 2.637106  data: 2.326573  max mem: 2850
+I20240614 10:12:28 43742 dinov2 helpers.py:102]   [ 20/626]  eta: 0:16:23    time: 1.261066  data: 1.034616  max mem: 2850
+I20240614 10:12:33 43742 dinov2 helpers.py:102]   [ 30/626]  eta: 0:12:42    time: 0.531756  data: 0.308362  max mem: 2850
+I20240614 10:12:40 43742 dinov2 helpers.py:102]   [ 40/626]  eta: 0:10:56    time: 0.592125  data: 0.459751  max mem: 2850
+I20240614 10:12:45 43742 dinov2 helpers.py:102]   [ 50/626]  eta: 0:09:41    time: 0.590957  data: 0.436290  max mem: 2850
+I20240614 10:12:50 43742 dinov2 helpers.py:102]   [ 60/626]  eta: 0:08:47    time: 0.543900  data: 0.373479  max mem: 2850
+I20240614 10:12:56 43742 dinov2 helpers.py:102]   [ 70/626]  eta: 0:08:11    time: 0.566727  data: 0.428177  max mem: 2850
+I20240614 10:13:02 43742 dinov2 helpers.py:102]   [ 80/626]  eta: 0:07:41    time: 0.578847  data: 0.447799  max mem: 2850
+I20240614 10:13:08 43742 dinov2 helpers.py:102]   [ 90/626]  eta: 0:07:17    time: 0.571997  data: 0.478002  max mem: 2850
+I20240614 10:13:13 43742 dinov2 helpers.py:102]   [100/626]  eta: 0:06:53    time: 0.552619  data: 0.439401  max mem: 2850
+I20240614 10:13:18 43742 dinov2 helpers.py:102]   [110/626]  eta: 0:06:32    time: 0.515152  data: 0.342474  max mem: 2850
+I20240614 10:13:23 43742 dinov2 helpers.py:102]   [120/626]  eta: 0:06:15    time: 0.511721  data: 0.298949  max mem: 2850
+I20240614 10:13:28 43742 dinov2 helpers.py:102]   [130/626]  eta: 0:05:58    time: 0.509639  data: 0.265744  max mem: 2850
+I20240614 10:13:34 43742 dinov2 helpers.py:102]   [140/626]  eta: 0:05:45    time: 0.529118  data: 0.320205  max mem: 2850
+I20240614 10:13:39 43742 dinov2 helpers.py:102]   [150/626]  eta: 0:05:33    time: 0.550860  data: 0.367822  max mem: 2850
+I20240614 10:13:45 43742 dinov2 helpers.py:102]   [160/626]  eta: 0:05:21    time: 0.540090  data: 0.347624  max mem: 2850
+I20240614 10:13:50 43742 dinov2 helpers.py:102]   [170/626]  eta: 0:05:09    time: 0.512526  data: 0.293024  max mem: 2850
+I20240614 10:13:55 43742 dinov2 helpers.py:102]   [180/626]  eta: 0:04:59    time: 0.529946  data: 0.219347  max mem: 2850
+I20240614 10:14:01 43742 dinov2 helpers.py:102]   [190/626]  eta: 0:04:51    time: 0.589940  data: 0.198930  max mem: 2850
+I20240614 10:14:07 43742 dinov2 helpers.py:102]   [200/626]  eta: 0:04:43    time: 0.608872  data: 0.251055  max mem: 2850
+I20240614 10:14:13 43742 dinov2 helpers.py:102]   [210/626]  eta: 0:04:35    time: 0.594884  data: 0.287164  max mem: 2850
+I20240614 10:14:19 43742 dinov2 helpers.py:102]   [220/626]  eta: 0:04:26    time: 0.560060  data: 0.285363  max mem: 2850
+I20240614 10:14:24 43742 dinov2 helpers.py:102]   [230/626]  eta: 0:04:18    time: 0.543015  data: 0.258472  max mem: 2850
+I20240614 10:14:30 43742 dinov2 helpers.py:102]   [240/626]  eta: 0:04:10    time: 0.578397  data: 0.293352  max mem: 2850
+I20240614 10:14:36 43742 dinov2 helpers.py:102]   [250/626]  eta: 0:04:03    time: 0.604916  data: 0.352828  max mem: 2850
+I20240614 10:14:42 43742 dinov2 helpers.py:102]   [260/626]  eta: 0:03:56    time: 0.587120  data: 0.342494  max mem: 2850
+I20240614 10:14:48 43742 dinov2 helpers.py:102]   [270/626]  eta: 0:03:48    time: 0.581113  data: 0.330397  max mem: 2850
+I20240614 10:14:53 43742 dinov2 helpers.py:102]   [280/626]  eta: 0:03:41    time: 0.565528  data: 0.264852  max mem: 2850
+I20240614 10:15:00 43742 dinov2 helpers.py:102]   [290/626]  eta: 0:03:34    time: 0.586695  data: 0.281959  max mem: 2850
+I20240614 10:15:05 43742 dinov2 helpers.py:102]   [300/626]  eta: 0:03:27    time: 0.583498  data: 0.375677  max mem: 2850
+I20240614 10:15:10 43742 dinov2 helpers.py:102]   [310/626]  eta: 0:03:19    time: 0.505280  data: 0.306513  max mem: 2850
+I20240614 10:15:16 43742 dinov2 helpers.py:102]   [320/626]  eta: 0:03:12    time: 0.529080  data: 0.196153  max mem: 2850
+I20240614 10:15:22 43742 dinov2 helpers.py:102]   [330/626]  eta: 0:03:06    time: 0.634111  data: 0.260416  max mem: 2850
+I20240614 10:15:28 43742 dinov2 helpers.py:102]   [340/626]  eta: 0:03:00    time: 0.643001  data: 0.418521  max mem: 2850
+I20240614 10:15:35 43742 dinov2 helpers.py:102]   [350/626]  eta: 0:02:53    time: 0.620021  data: 0.532750  max mem: 2850
+I20240614 10:15:41 43742 dinov2 helpers.py:102]   [360/626]  eta: 0:02:47    time: 0.623301  data: 0.580317  max mem: 2850
+I20240614 10:15:47 43742 dinov2 helpers.py:102]   [370/626]  eta: 0:02:41    time: 0.614661  data: 0.591367  max mem: 2850
+I20240614 10:15:52 43742 dinov2 helpers.py:102]   [380/626]  eta: 0:02:33    time: 0.559703  data: 0.516919  max mem: 2850
+I20240614 10:15:58 43742 dinov2 helpers.py:102]   [390/626]  eta: 0:02:27    time: 0.536111  data: 0.424867  max mem: 2850
+I20240614 10:16:03 43742 dinov2 helpers.py:102]   [400/626]  eta: 0:02:20    time: 0.560728  data: 0.397899  max mem: 2850
+I20240614 10:16:09 43742 dinov2 helpers.py:102]   [410/626]  eta: 0:02:14    time: 0.570066  data: 0.370178  max mem: 2850
+I20240614 10:16:16 43742 dinov2 helpers.py:102]   [420/626]  eta: 0:02:08    time: 0.615755  data: 0.375447  max mem: 2850
+I20240614 10:16:21 43742 dinov2 helpers.py:102]   [430/626]  eta: 0:02:01    time: 0.605199  data: 0.387302  max mem: 2850
+I20240614 10:16:28 43742 dinov2 helpers.py:102]   [440/626]  eta: 0:01:55    time: 0.610384  data: 0.394160  max mem: 2850
+I20240614 10:16:34 43742 dinov2 helpers.py:102]   [450/626]  eta: 0:01:49    time: 0.611837  data: 0.362129  max mem: 2850
+I20240614 10:16:39 43742 dinov2 helpers.py:102]   [460/626]  eta: 0:01:42    time: 0.580813  data: 0.371790  max mem: 2850
+I20240614 10:16:46 43742 dinov2 helpers.py:102]   [470/626]  eta: 0:01:36    time: 0.604889  data: 0.453759  max mem: 2850
+I20240614 10:16:52 43742 dinov2 helpers.py:102]   [480/626]  eta: 0:01:30    time: 0.629671  data: 0.468182  max mem: 2850
+I20240614 10:16:58 43742 dinov2 helpers.py:102]   [490/626]  eta: 0:01:24    time: 0.592623  data: 0.436504  max mem: 2850
+I20240614 10:17:04 43742 dinov2 helpers.py:102]   [500/626]  eta: 0:01:18    time: 0.605597  data: 0.506972  max mem: 2850
+I20240614 10:17:10 43742 dinov2 helpers.py:102]   [510/626]  eta: 0:01:11    time: 0.605914  data: 0.554073  max mem: 2850
+I20240614 10:17:15 43742 dinov2 helpers.py:102]   [520/626]  eta: 0:01:05    time: 0.546293  data: 0.474774  max mem: 2850
+I20240723 23:31:35 3558508 dinov2 config.py:59] git:
+  sha: e1277af2ba9496fbadf7aec6eba56e8d882d1e35, status: has uncommitted changes, branch: main
+
+I20240723 23:31:35 3558508 dinov2 config.py:60] batch_size: 256
+config_file: /NAS6/Members/linchenxi/projects/DINOV2/model8/config.yaml
+gather_on_cpu: False
+local_rank: 6
+n_per_class_list: [-1]
+n_tries: 1
+nb_knn: [10, 20, 100, 200]
+opts: ['train.output_dir=/NAS6/Members/linchenxi/dinov2']
+output_dir: /NAS6/Members/linchenxi/dinov2
+pretrained_weights: /NAS6/Members/linchenxi/projects/DINOV2/model8/eval/training_24999/teacher_checkpoint.pth
+temperature: 0.07
+train_dataset_str: ClusterSentinel2:split=TRAIN:root=/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/clusters:extra=/NAS6/Members/linchenxi/ILSVRC
+val_dataset_str: ClusterSentinel2:split=TEST:root=/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/clusters:extra=/NAS6/Members/linchenxi/ILSVRC
+I20240723 23:31:35 3558508 dinov2 config.py:26] sqrt scaling learning rate; base: 0.004, new: 0.002
+I20240723 23:31:35 3558508 dinov2 config.py:33] MODEL:
+  WEIGHTS: ''
+compute_precision:
+  grad_scaler: true
+  teacher:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+  student:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+dino:
+  loss_weight: 1.0
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+  koleo_loss_weight: 0.1
+ibot:
+  loss_weight: 1.0
+  mask_sample_probability: 0.3
+  mask_ratio_min_max:
+  - 0.1
+  - 0.3
+  separate_head: false
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+train:
+  batch_size_per_gpu: 32
+  dataset_path: Sentinel2:split=TRAIN:root=/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas:extra=/NAS6/Members/linchenxi/ILSVRC
+  output_dir: /NAS6/Members/linchenxi/dinov2
+  saveckp_freq: 20
+  seed: 0
+  num_workers: 5
+  OFFICIAL_EPOCH_LENGTH: 1250
+  cache_dataset: true
+  centering: centering
+student:
+  arch: vit_base
+  patch_size: 16
+  in_chans: 9
+  drop_path_rate: 0.3
+  layerscale: 1.0e-05
+  drop_path_uniform: true
+  pretrained_weights: ''
+  ffn_layer: mlp
+  block_chunks: 4
+  qkv_bias: true
+  proj_bias: true
+  ffn_bias: true
+  num_register_tokens: 2
+  interpolate_antialias: false
+  interpolate_offset: 0.1
+teacher:
+  momentum_teacher: 0.992
+  final_momentum_teacher: 1
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 30
+optim:
+  epochs: 100
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+  base_lr: 0.004
+  lr: 0.002
+  warmup_epochs: 10
+  min_lr: 1.0e-06
+  clip_grad: 3.0
+  freeze_last_layer_epochs: 1
+  scaling_rule: sqrt_wrt_1024
+  patch_embed_lr_mult: 0.2
+  layerwise_decay: 0.9
+  adamw_beta1: 0.9
+  adamw_beta2: 0.999
+crops:
+  global_crops_scale:
+  - 0.32
+  - 1.0
+  local_crops_number: 8
+  local_crops_scale:
+  - 0.05
+  - 0.32
+  global_crops_size: 368
+  local_crops_size: 192
+evaluation:
+  eval_period_iterations: 12500
+
+I20240723 23:31:35 3558508 dinov2 vision_transformer.py:126] using MLP layer as FFN
+I20240723 23:31:37 3558508 dinov2 utils.py:26] Take key teacher in provided checkpoint dict
+I20240723 23:31:37 3558508 dinov2 utils.py:33] Pretrained weights found at /NAS6/Members/linchenxi/projects/DINOV2/model8/eval/training_24999/teacher_checkpoint.pth and loaded with msg: _IncompatibleKeys(missing_keys=[], unexpected_keys=['dino_head.mlp.0.weight', 'dino_head.mlp.0.bias', 'dino_head.mlp.2.weight', 'dino_head.mlp.2.bias', 'dino_head.mlp.4.weight', 'dino_head.mlp.4.bias', 'dino_head.last_layer.weight_g', 'dino_head.last_layer.weight_v'])
+I20240723 23:31:37 3558508 dinov2 loaders.py:92] using dataset: "ClusterSentinel2:split=TRAIN:root=/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/clusters:extra=/NAS6/Members/linchenxi/ILSVRC"
+I20240723 23:31:39 3558508 dinov2 loaders.py:97] # of dataset samples: 164,544
+I20240723 23:31:39 3558508 dinov2 loaders.py:92] using dataset: "ClusterSentinel2:split=TEST:root=/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/clusters:extra=/NAS6/Members/linchenxi/ILSVRC"
+I20240723 23:31:39 3558508 dinov2 loaders.py:97] # of dataset samples: 17,563
+I20240723 23:31:39 3558508 dinov2 knn.py:262] Extracting features for train set...
+I20240723 23:31:39 3558508 dinov2 loaders.py:155] sampler: distributed
+I20240723 23:31:39 3558508 dinov2 loaders.py:214] using PyTorch data loader
+I20240723 23:31:39 3558508 dinov2 loaders.py:227] # of batches: 81
+W20240723 23:31:50 3559040 py.warnings warnings.py:109] /NAS6/Members/linchenxi/dinov2/dinov2_venv/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+W20240723 23:31:56 3559063 py.warnings warnings.py:109] /NAS6/Members/linchenxi/dinov2/dinov2_venv/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+W20240723 23:32:01 3559237 py.warnings warnings.py:109] /NAS6/Members/linchenxi/dinov2/dinov2_venv/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+W20240723 23:32:05 3559334 py.warnings warnings.py:109] /NAS6/Members/linchenxi/dinov2/dinov2_venv/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+W20240723 23:32:08 3559625 py.warnings warnings.py:109] /NAS6/Members/linchenxi/dinov2/dinov2_venv/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+I20240723 23:32:24 3558508 dinov2 utils.py:129] Storing features into tensor of shape torch.Size([164544, 768])
+I20240723 23:32:24 3558508 dinov2 helpers.py:103]   [ 0/81]  eta: 1:00:34    time: 44.869587  data: 36.816021  max mem: 8979

@@ -47,6 +47,7 @@ def main():
     parents = [train_args_parser]
     args_parser = get_args_parser(description=description, parents=parents)
     args = args_parser.parse_args()
+    args.config_file = "/NAS6/Members/linchenxi/dinov2/dinov2/configs/train/vitl16_short.yaml"
 
     setup_logging()
 

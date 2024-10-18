@@ -63,12 +63,16 @@ class DINOLoss(nn.Module):
     def forward(self, student_output_list, teacher_out_softmaxed_centered_list):
         """
         Cross-entropy between softmax outputs of the teacher and student networks.
+        By default there will be 8 local views and 2 global views
         """
         # TODO: Use cross_entropy_distribution here
         total_loss = 0
         for s in student_output_list:
-            lsm = F.log_softmax(s / self.student_temp, dim=-1)
+            lsm = F.log_softmax(s / self.student_temp, dim=-1)  # s.shape(64, 65536), 64 is the batch size
             for t in teacher_out_softmaxed_centered_list:
+                # equlvalent to t * log(s), t is the proability of the teacher output and s is the proability of the student output
+                # t is still a probability distribution
+                # if distribution "s" is sufficiently close to t, then t * log(s) will be minimized as log(s) would approximate to 0 if s is approaching to 1
                 loss = torch.sum(t * lsm, dim=-1)
                 total_loss -= loss.mean()
         return total_loss
@@ -81,7 +85,7 @@ class DINOLoss(nn.Module):
     def reduce_center_update(self, teacher_output):
         self.updated = False
         self.len_teacher_output = len(teacher_output)
-        self.async_batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
+        self.async_batch_center = torch.sum(teacher_output, dim=0, keepdim=True)  # (1, 65536)
         if dist.is_initialized():
             self.reduce_handle = dist.all_reduce(self.async_batch_center, async_op=True)
 

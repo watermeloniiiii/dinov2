@@ -97,8 +97,10 @@ class DataAugmentationDINO(object):
         output = {}
 
         # global crops:
-        im1_base = self.geometric_augmentation_global(image)
-        global_crop_1 = self.global_transfo1(im1_base)
+        im1_base = self.geometric_augmentation_global(image)  # random clip to 224 * 224 and random horizontal flip1
+        global_crop_1 = self.global_transfo1(
+            im1_base
+        )  # random apply colorjitter, grayscale, gaussianblur, normalzation
 
         im2_base = self.geometric_augmentation_global(image)
         global_crop_2 = self.global_transfo2(im2_base)
@@ -111,7 +113,7 @@ class DataAugmentationDINO(object):
         # local crops:
         local_crops = [
             self.local_transfo(self.geometric_augmentation_local(image)) for _ in range(self.local_crops_number)
-        ]
+        ]  # 8 local crops, each with 3 * 96 * 96
         output["local_crops"] = local_crops
         output["offsets"] = ()
 

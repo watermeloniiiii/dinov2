@@ -10,9 +10,9 @@ import torch
 from torch import nn
 from torchmetrics import MetricCollection
 
-from dinov2.data import DatasetWithEnumeratedTargets, SamplerType, make_data_loader
+from dinov2.data import DatasetWithEnumeratedTargets, DatasetWithEnumeratedTargetsSentinel2, SamplerType, make_data_loader
 import dinov2.distributed as distributed
-from dinov2.logging import MetricLogger
+from dinov2.logging_dinov2 import MetricLogger
 
 
 logger = logging.getLogger("dinov2")
@@ -96,7 +96,7 @@ def all_gather_and_flatten(tensor_rank):
 
 
 def extract_features(model, dataset, batch_size, num_workers, gather_on_cpu=False):
-    dataset_with_enumerated_targets = DatasetWithEnumeratedTargets(dataset)
+    dataset_with_enumerated_targets = DatasetWithEnumeratedTargetsSentinel2(dataset)
     sample_count = len(dataset_with_enumerated_targets)
     data_loader = make_data_loader(
         dataset=dataset_with_enumerated_targets,
@@ -132,7 +132,6 @@ def extract_features_with_dataloader(model, data_loader, sample_count, gather_on
         index_all = all_gather_and_flatten(index).to(gather_device)
         features_all_ranks = all_gather_and_flatten(features_rank).to(gather_device)
         labels_all_ranks = all_gather_and_flatten(labels_rank).to(gather_device)
-
         # update storage feature matrix
         if len(index_all) > 0:
             features.index_copy_(0, index_all, features_all_ranks)

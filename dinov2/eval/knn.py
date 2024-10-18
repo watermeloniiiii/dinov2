@@ -16,7 +16,7 @@ from torch.nn.functional import one_hot, softmax
 
 import dinov2.distributed as distributed
 from dinov2.data import SamplerType, make_data_loader, make_dataset
-from dinov2.data.transforms import make_classification_eval_transform
+from dinov2.data.transforms import make_classification_eval_transform, make_classification_eval_transform_Sentinel2
 from dinov2.eval.metrics import AccuracyAveraging, build_topk_accuracy_metric
 from dinov2.eval.setup import get_args_parser as get_setup_args_parser
 from dinov2.eval.setup import setup_and_build_model
@@ -84,6 +84,7 @@ def get_args_parser(
         type=int,
         help="Number of tries",
     )
+    parser.add_argument("--local-rank", default=0, type=int, help="Variable for distributed computing.")
     parser.set_defaults(
         train_dataset_str="ImageNet:split=TRAIN",
         val_dataset_str="ImageNet:split=VAL",
@@ -92,6 +93,7 @@ def get_args_parser(
         batch_size=256,
         n_per_class_list=[-1],
         n_tries=1,
+        local_rank=0,
     )
     return parser
 
@@ -196,9 +198,15 @@ class DictKeysModule(torch.nn.Module):
 
 
 def create_module_dict(*, module, n_per_class_list, n_tries, nb_knn, train_features, train_labels):
+    """
+    Parameters
+    ----------
+    module, nn.Module
+    """
     modules = {}
     mapping = create_class_indices_mapping(train_labels)
     for npc in n_per_class_list:
+        # n_per_class_list == [-1] means when will use all samples for each class
         if npc < 0:  # Only one try needed when using the full data
             full_module = module(
                 train_features=train_features,
@@ -286,8 +294,10 @@ def eval_knn(
         train_labels=train_labels,
     )
     postprocessors, metrics = {}, {}
+    # there would be only one knn_module if we use npc = -1
     for n_per_class, knn_module in knn_module_dict.items():
         for t, knn_try in knn_module.items():
+            ## '**' is used for dict unpacking
             postprocessors = {
                 **postprocessors,
                 **{(n_per_class, t, k): DictKeysModule([n_per_class, t, k]) for k in knn_try.nb_knn},
@@ -331,7 +341,7 @@ def eval_knn_with_model(
     n_per_class_list=[-1],
     n_tries=1,
 ):
-    transform = transform or make_classification_eval_transform()
+    transform = transform or make_classification_eval_transform_Sentinel2()
 
     train_dataset = make_dataset(
         dataset_str=train_dataset_str,

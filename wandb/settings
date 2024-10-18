@@ -1,0 +1,5 @@
+[default]
+entity = chenxilin
+project = dinov2_pretrain
+base_url = https://api.wandb.ai
+

@@ -59,9 +59,10 @@ def get_autocast_dtype(config):
         return torch.float
 
 
-def build_model_for_eval(config, pretrained_weights):
+def build_model_for_eval(config, pretrain, pretrained_weights):
     model, _ = build_model_from_cfg(config, only_teacher=True)
-    dinov2_utils.load_pretrained_weights(model, pretrained_weights, "teacher")
+    if pretrain:
+        dinov2_utils.load_pretrained_weights(model, pretrained_weights, "teacher")
     model.eval()
     model.cuda()
     return model
@@ -72,4 +73,4 @@ def setup_and_build_model(args) -> Tuple[Any, torch.dtype]:
     config = setup(args)
     model = build_model_for_eval(config, args.pretrained_weights)
     autocast_dtype = get_autocast_dtype(config)
-    return model, autocast_dtype
+    return model, autocast_dtype, config

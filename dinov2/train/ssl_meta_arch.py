@@ -146,6 +146,7 @@ class SSLMetaArch(nn.Module):
 
         n_local_crops_loss_terms = max(n_local_crops * n_global_crops, 1)
         n_global_crops_loss_terms = (n_global_crops - 1) * n_global_crops
+        doy = images["day_of_the_year"].cuda(non_blocking=True)
 
         do_dino = self.do_dino
         do_ibot = self.do_ibot
@@ -156,30 +157,44 @@ class SSLMetaArch(nn.Module):
         # teacher output
         @torch.no_grad()
         def get_teacher_output():
-            x, n_global_crops_teacher = global_crops, n_global_crops
-            teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True)
-            teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]
-            teacher_cls_tokens = teacher_cls_tokens.chunk(n_global_crops_teacher)
+            x, n_global_crops_teacher = (
+                global_crops,
+                n_global_crops,
+            )  # x.shape (128, 3, 224, 224), the bs is 64, 2 views is 128
+            teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True, tag="teacher", doy=doy)
+            teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]  # (128, 1024)
+            teacher_cls_tokens = teacher_cls_tokens.chunk(n_global_crops_teacher)  # [(64, 128), (64, 128))]
             # watch out: these are chunked and cat'd in reverse so A is matched to B in the global crops dino loss
             teacher_cls_tokens = torch.cat((teacher_cls_tokens[1], teacher_cls_tokens[0]))
-            ibot_teacher_patch_tokens = teacher_backbone_output_dict["x_norm_patchtokens"]
+            ibot_teacher_patch_tokens = teacher_backbone_output_dict["x_norm_patchtokens"]  # (128, 196, 1024)
             _dim = ibot_teacher_patch_tokens.shape[-1]
             n_cls_tokens = teacher_cls_tokens.shape[0]
 
             if do_ibot and not self.ibot_separate_head:
-                buffer_tensor_teacher = ibot_teacher_patch_tokens.new_zeros(upperbound + n_cls_tokens, _dim)
+                buffer_tensor_teacher = ibot_teacher_patch_tokens.new_zeros(
+                    upperbound + n_cls_tokens, _dim
+                )  # (3899, 1024), note that this upper bound can change
                 buffer_tensor_teacher[:n_cls_tokens].copy_(teacher_cls_tokens)
+                # the explanation for torch.index_select:
+                # ibot_teacher_patch_tokens.flatten(0, 1).shape is (25088, 1024)
+                # len(mask_indices_list) is 3732
+                # torch.index_select will pick up 3732 tokens based on their index from ibot_teacher_patch_tokens and assign to buffer_tensor_teacher
+                # as buffer_tensor_teacher.shape is (3899, 1024), buffer_tensor_teacher[3860:3899] will be zero
                 torch.index_select(
                     ibot_teacher_patch_tokens.flatten(0, 1),
                     dim=0,
                     index=mask_indices_list,
                     out=buffer_tensor_teacher[n_cls_tokens : n_cls_tokens + n_masked_patches],
                 )
-                tokens_after_head = self.teacher.dino_head(buffer_tensor_teacher)
-                teacher_cls_tokens_after_head = tokens_after_head[:n_cls_tokens]
+                ## use the following code has the same functionality:
+                # buffer_tensor_teacher[n_cls_tokens : n_cls_tokens + n_masked_patches] = (
+                #     ibot_teacher_patch_tokens.flatten(0, 1)[mask_indices_list]
+                # )
+                tokens_after_head = self.teacher.dino_head(buffer_tensor_teacher)  # (3899, 65536)
+                teacher_cls_tokens_after_head = tokens_after_head[:n_cls_tokens]  # (128, 65536)
                 masked_teacher_patch_tokens_after_head = tokens_after_head[
                     n_cls_tokens : n_cls_tokens + n_masked_patches
-                ]
+                ]  # (3732, 65536)
             elif do_ibot and self.ibot_separate_head:
                 buffer_tensor_teacher = ibot_teacher_patch_tokens.new_zeros(upperbound, _dim)
                 torch.index_select(
@@ -197,9 +212,13 @@ class SSLMetaArch(nn.Module):
                 masked_teacher_ibot_softmaxed_centered = None
 
             if self.cfg.train.centering == "centering":
+                # centering is essentially subtracting the mean value of the resulant hidden feature (128, 65536), at the batch-level
+                # the update is based on momentum
                 teacher_dino_softmaxed_centered_list = self.dino_loss.softmax_center_teacher(
                     teacher_cls_tokens_after_head, teacher_temp=teacher_temp
-                ).view(n_global_crops_teacher, -1, *teacher_cls_tokens_after_head.shape[1:])
+                ).view(
+                    n_global_crops_teacher, -1, *teacher_cls_tokens_after_head.shape[1:]
+                )  # each is [64, 65536]
                 self.dino_loss.update_center(teacher_cls_tokens_after_head)
                 if do_ibot:
                     masked_teacher_patch_tokens_after_head = masked_teacher_patch_tokens_after_head.unsqueeze(0)
@@ -226,30 +245,32 @@ class SSLMetaArch(nn.Module):
 
             return teacher_dino_softmaxed_centered_list, masked_teacher_ibot_softmaxed_centered
 
-        teacher_dino_softmaxed_centered_list, masked_teacher_ibot_softmaxed_centered = get_teacher_output()
+        teacher_dino_softmaxed_centered_list, masked_teacher_ibot_softmaxed_centered = (
+            get_teacher_output()
+        )  # [[64, 65536], [64, 65536]], [3732, 65536]
         reshard_fsdp_model(self.teacher)
 
         loss_dict = {}
 
         loss_accumulator = 0  # for backprop
         student_global_backbone_output_dict, student_local_backbone_output_dict = self.student.backbone(
-            [global_crops, local_crops], masks=[masks, None], is_training=True
+            [global_crops, local_crops], masks=[masks, None], is_training=True, tag="student", doy=doy
         )
 
         inputs_for_student_head_list = []
 
         # 1a: local crops cls tokens
-        student_local_cls_tokens = student_local_backbone_output_dict["x_norm_clstoken"]
+        student_local_cls_tokens = student_local_backbone_output_dict["x_norm_clstoken"]  # (512, 1024)
         inputs_for_student_head_list.append(student_local_cls_tokens.unsqueeze(0))
 
         # 1b: global crops cls tokens
-        student_global_cls_tokens = student_global_backbone_output_dict["x_norm_clstoken"]
+        student_global_cls_tokens = student_global_backbone_output_dict["x_norm_clstoken"]  # (128, 1024)
         inputs_for_student_head_list.append(student_global_cls_tokens.unsqueeze(0))
 
         # 1c: global crops patch tokens
         if do_ibot:
             _dim = student_global_backbone_output_dict["x_norm_clstoken"].shape[-1]
-            ibot_student_patch_tokens = student_global_backbone_output_dict["x_norm_patchtokens"]
+            ibot_student_patch_tokens = student_global_backbone_output_dict["x_norm_patchtokens"]  # (128, 196, 1024)
             buffer_tensor_patch_tokens = ibot_student_patch_tokens.new_zeros(upperbound, _dim)
             buffer_tensor_patch_tokens[:n_masked_patches].copy_(
                 torch.index_select(ibot_student_patch_tokens.flatten(0, 1), dim=0, index=mask_indices_list)
@@ -266,10 +287,10 @@ class SSLMetaArch(nn.Module):
         outputs_list = _attn_bias.split(self.student.dino_head(cat_inputs))
 
         # 3a: local crops cls tokens
-        student_local_cls_tokens_after_head = outputs_list.pop(0).squeeze(0)
+        student_local_cls_tokens_after_head = outputs_list.pop(0).squeeze(0)  # (512, 65536)
 
         # 3b: global crops cls tokens
-        student_global_cls_tokens_after_head = outputs_list.pop(0).squeeze(0)
+        student_global_cls_tokens_after_head = outputs_list.pop(0).squeeze(0)  # (128, 65536)
 
         # 3c: global crops patch tokens
         if do_ibot and not self.ibot_separate_head:
@@ -348,9 +369,9 @@ class SSLMetaArch(nn.Module):
     def fsdp_synchronize_streams(self):
         if self.need_to_synchronize_fsdp_streams:
             torch.cuda.synchronize()
-            self.student.dino_head._streams = (
-                self.teacher.dino_head._streams
-            ) = self.student.backbone._streams = self.teacher.backbone._streams
+            self.student.dino_head._streams = self.teacher.dino_head._streams = self.student.backbone._streams = (
+                self.teacher.backbone._streams
+            )
             self.need_to_synchronize_fsdp_streams = False
 
     def update_teacher(self, m):

@@ -288,3 +288,9 @@ class ImageNet(ExtendedVisionDataset):
     def dump_extra(self) -> None:
         self._dump_entries()
         self._dump_class_ids_and_names()
+
+
+if __name__ == "__main__":
+    for split in ImageNet.Split:
+        dataset = ImageNet(split=split, root="/NAS6/Members/linchenxi/ILSVRC", extra="/NAS6/Members/linchenxi/ILSVRC")
+        dataset.dump_extra()

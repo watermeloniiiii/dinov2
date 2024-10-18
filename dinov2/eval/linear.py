@@ -132,6 +132,7 @@ def get_args_parser(
         type=str,
         help="Path to a file containing a mapping to adjust classifier outputs",
     )
+    parser.add_argument("--local-rank", default=0, type=int, help="Variable for distributed computing.")
     parser.set_defaults(
         train_dataset_str="ImageNet:split=TRAIN",
         val_dataset_str="ImageNet:split=VAL",
@@ -144,6 +145,7 @@ def get_args_parser(
         eval_period_iterations=1250,
         learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 0.1],
         val_metric_type=MetricType.MEAN_ACCURACY,
+        local_rank=0,
         test_metric_types=None,
         classifier_fpath=None,
         val_class_mapping_fpath=None,
@@ -244,9 +246,9 @@ def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, 
                     out_dim, use_n_blocks=n, use_avgpool=avgpool, num_classes=num_classes
                 )
                 linear_classifier = linear_classifier.cuda()
-                linear_classifiers_dict[
-                    f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")
-                ] = linear_classifier
+                linear_classifiers_dict[f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")] = (
+                    linear_classifier
+                )
                 optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
 
     linear_classifiers = AllClassifiers(linear_classifiers_dict)

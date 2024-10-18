@@ -11,12 +11,13 @@ from functools import partial
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
 import torch
+import wandb
 
 from dinov2.data import SamplerType, make_data_loader, make_dataset
-from dinov2.data import collate_data_and_cast, DataAugmentationDINO, MaskingGenerator
+from dinov2.data import collate_data_and_cast, DataAugmentationDINO, MaskingGenerator, DataAugmentationDINORS
 import dinov2.distributed as distributed
 from dinov2.fsdp import FSDPCheckpointer
-from dinov2.logging import MetricLogger
+from dinov2.logging_dinov2 import MetricLogger
 from dinov2.utils.config import setup
 from dinov2.utils.utils import CosineScheduler
 
@@ -54,6 +55,8 @@ For python-based LazyConfig, use "path.key=value".
         type=str,
         help="Output directory to save logs and checkpoints",
     )
+    parser.add_argument("--local-rank", default=0, type=int, help="Variable for distributed computing.")
+    parser.add_argument("--model_name", default="model-1", type=str, help="The name for the pretrained model")
 
     return parser
 
@@ -95,9 +98,9 @@ def build_schedulers(cfg):
     teacher_temp_schedule = CosineScheduler(**teacher_temp)
     last_layer_lr_schedule = CosineScheduler(**lr)
 
-    last_layer_lr_schedule.schedule[
-        : cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH
-    ] = 0  # mimicking the original schedules
+    last_layer_lr_schedule.schedule[: cfg.optim["freeze_last_layer_epochs"] * OFFICIAL_EPOCH_LENGTH] = (
+        0  # mimicking the original schedules
+    )
 
     logger.info("Schedulers ready.")
 
@@ -149,7 +152,7 @@ def do_train(cfg, model, resume=False):
 
     # checkpointer
     checkpointer = FSDPCheckpointer(model, cfg.train.output_dir, optimizer=optimizer, save_to_disk=True)
-
+    # if have multiple ranks, each rank will load its own pth
     start_iter = checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=resume).get("iteration", -1) + 1
 
     OFFICIAL_EPOCH_LENGTH = cfg.train.OFFICIAL_EPOCH_LENGTH
@@ -157,9 +160,9 @@ def do_train(cfg, model, resume=False):
 
     periodic_checkpointer = PeriodicCheckpointer(
         checkpointer,
-        period=3 * OFFICIAL_EPOCH_LENGTH,
+        period=1,
         max_iter=max_iter,
-        max_to_keep=3,
+        max_to_keep=2,
     )
 
     # setup data preprocessing
@@ -172,12 +175,13 @@ def do_train(cfg, model, resume=False):
         max_num_patches=0.5 * img_size // patch_size * img_size // patch_size,
     )
 
-    data_transform = DataAugmentationDINO(
+    data_transform = DataAugmentationDINORS(
         cfg.crops.global_crops_scale,
         cfg.crops.local_crops_scale,
         cfg.crops.local_crops_number,
         global_crops_size=cfg.crops.global_crops_size,
         local_crops_size=cfg.crops.local_crops_size,
+        num_channel=cfg.student.in_chans,
     )
 
     collate_fn = partial(
@@ -274,6 +278,16 @@ def do_train(cfg, model, resume=False):
             logger.info("NaN detected")
             raise AssertionError
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+        if torch.distributed.get_rank() == 0:
+            wandb.log(
+                {
+                    "dino_local_crops_loss": loss_dict_reduced["dino_local_crops_loss"],
+                    "dino_global_crops_loss": loss_dict_reduced["dino_global_crops_loss"],
+                    "koleo_loss": loss_dict_reduced["koleo_loss"],
+                    "ibot_loss": loss_dict_reduced["ibot_loss"],
+                },
+                step=iteration,
+            )
 
         metric_logger.update(lr=lr)
         metric_logger.update(wd=wd)
@@ -295,7 +309,7 @@ def do_train(cfg, model, resume=False):
 
 
 def main(args):
-    cfg = setup(args)
+    cfg = setup(args)  # will return a dict containing all necessary configs
 
     model = SSLMetaArch(cfg).to(torch.device("cuda"))
     model.prepare_for_distributed_training()
@@ -309,7 +323,17 @@ def main(args):
             + 1
         )
         return do_test(cfg, model, f"manual_{iteration}")
-
+    if torch.distributed.get_rank() == 0:
+        # wandb.login(key="c10829f6b79edeea79554d3c1660588729eec616")
+        wandb.login()
+        config_wandb = {}
+        wandb.require("core")
+        wandb.init(
+            entity="chenxilin",
+            config=config_wandb,
+            project=f"dinov2_pretrain",
+            name=args.model_name,
+        )
     do_train(cfg, model, resume=not args.no_resume)
 
 

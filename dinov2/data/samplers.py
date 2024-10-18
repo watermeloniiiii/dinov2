@@ -25,6 +25,9 @@ class EpochSampler(Sampler):
         start: Optional[int] = None,
         step: Optional[int] = None,
     ):
+        """
+        size, how many samples to use in each epoch
+        """
         self._size = size
         self._sample_count = sample_count
         self._shuffle = shuffle
@@ -34,6 +37,8 @@ class EpochSampler(Sampler):
         self._epoch = 0
 
     def __iter__(self):
+        # count is how many times of the entire dataset we need to use to cover the sample size
+        # only when self._size is larger than the entire dataset will count be larger than 1
         count = (self._size + self._sample_count - 1) // self._sample_count
         tiled_indices = np.tile(np.arange(self._sample_count), count)
         if self._shuffle:
