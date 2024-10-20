@@ -163,7 +163,7 @@ class SSLMetaArch(nn.Module):
             )  # x.shape (128, 3, 224, 224), the bs is 64, 2 views is 128
             teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True, tag="teacher", doy=doy)
             teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]  # (128, 1024)
-            teacher_cls_tokens = teacher_cls_tokens.chunk(n_global_crops_teacher)  # [(64, 128), (64, 128))]
+            teacher_cls_tokens = teacher_cls_tokens.chunk(n_global_crops_teacher)  # [(64, 1024), (64, 1024))]
             # watch out: these are chunked and cat'd in reverse so A is matched to B in the global crops dino loss
             teacher_cls_tokens = torch.cat((teacher_cls_tokens[1], teacher_cls_tokens[0]))
             ibot_teacher_patch_tokens = teacher_backbone_output_dict["x_norm_patchtokens"]  # (128, 196, 1024)

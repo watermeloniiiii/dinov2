@@ -108,24 +108,11 @@ class PretrainSentinel2Dataset(Dataset):
 
     def __len__(self):
         return len(self.file_lst)
-    
+
     def _str_2_doy(self, date):
         month = int(date[:2])
         day = int(date[2:])
-        num_day_per_month = {
-            1: 31,
-            2: 28,
-            3: 31,
-            4: 30,
-            5: 31,
-            6: 30,
-            7: 31,
-            8: 31,
-            9: 30,
-            10: 31,
-            11: 30,
-            12: 31
-        }
+        num_day_per_month = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
         doy = 0
         for m in range(1, month):
             doy += num_day_per_month[m]
@@ -137,9 +124,9 @@ class PretrainSentinel2Dataset(Dataset):
         date = self._str_2_doy(tiles[0].split("/")[-2][-4:])
         image = self._composite(tiles)
         if isinstance(image, np.ndarray):
-            transform_2_tensor = transforms.Compose([
-            transforms.v2.ToImageTensor(), 
-            transforms.ConvertImageDtype(torch.float)])
+            transform_2_tensor = transforms.Compose(
+                [transforms.v2.ToImageTensor(), transforms.ConvertImageDtype(torch.float)]
+            )
             image = transform_2_tensor(image)
         if self.transforms is not None:
             image, target = self.transforms(image, 1)
