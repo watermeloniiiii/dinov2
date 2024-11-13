@@ -248,19 +248,20 @@ def cluster_by_label(root, save_dir):
 
 
 if __name__ == "__main__":
-    # split_dataset(
-    #     "/NAS6/Members/yufengyang/Satlas/label_landcover", "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas"
-    # )
+    split_dataset(
+        "/NAS6/Members/yufengyang/Satlas/label_landcover",
+        "/NAS3/Members/linchenxi/projects/foundation_model/satlas_new",
+    )
     # remove_empty("/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train")
     # do_statistic(
     #     "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train",
     #     ["tci", "b05", "b06", "b07", "b08", "b11", "b12"],
     # )
-    dump_entries(
-        "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train",
-        ["tci", "b05", "b06", "b07", "b08", "b11", "b12"],
-        "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train_all.json",
-    )
+    # dump_entries(
+    #     "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train",
+    #     ["tci", "b05", "b06", "b07", "b08", "b11", "b12"],
+    #     "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train_all.json",
+    # )
     # cluster_by_label(
     #     "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train",
     #     "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/clusters_train",

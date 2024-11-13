@@ -21,7 +21,7 @@ import shutil
 from multiprocessing.pool import ThreadPool
 from PIL import Image
 
-from .sentinel2 import PretrainSentinel2Dataset
+from sentinel2 import PretrainSentinel2Dataset
 
 BAND_ORDER = {"tci": 0, "b05": 0, "b06": 0, "b07": 0, "b08": 0, "b11": 0, "b12": 0}
 BANDS = {"tci": (164622, 0, 17570), "all": (164544, 0, 17563)}
@@ -170,7 +170,7 @@ class StandardTransform:
 if __name__ == "__main__":
     # SegmentationSentinel2Dataset.do_statistic("/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/clusters/test_all.json")
     SegmentationSentinel2Dataset.dump_entries(
-        "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train",
+        "/NAS3/Members/linchenxi/projects/foundation_model/satlas/train",
         ["tci", "b05", "b06", "b07", "b08", "b11", "b12"],
-        "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train_segmentation.json",
+        "/NAS3/Members/linchenxi/projects/foundation_model/satlas/train_segmentation.json",
     )
