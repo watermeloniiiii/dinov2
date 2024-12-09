@@ -21,7 +21,7 @@ import shutil
 from multiprocessing.pool import ThreadPool
 from PIL import Image
 
-from sentinel2 import PretrainSentinel2Dataset
+from .sentinel2 import PretrainSentinel2Dataset
 
 BAND_ORDER = {"tci": 0, "b05": 0, "b06": 0, "b07": 0, "b08": 0, "b11": 0, "b12": 0}
 BANDS = {"tci": (164622, 0, 17570), "all": (164544, 0, 17563)}

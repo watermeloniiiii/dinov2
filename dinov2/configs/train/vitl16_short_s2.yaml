@@ -3,6 +3,7 @@ train:
   dataset_path: Sentinel2:split=TRAIN:root=/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas
   batch_size_per_gpu: 24
   num_workers: 5
+  multimodal: false
 student:
   arch: vit_large
   block_chunks: 4

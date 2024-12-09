@@ -8,3 +8,4 @@ from .image_net_22k import ImageNet22k
 from .sentinel2 import PretrainSentinel2Dataset
 from .sentinel2_cluster import ClusterSentinel2Dataset
 from .sentinel2_segmentation import SegmentationSentinel2Dataset
+from .sen12ms import SEN12MSDataset

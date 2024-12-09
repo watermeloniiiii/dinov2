@@ -16,6 +16,7 @@ from .datasets import (
     PretrainSentinel2Dataset,
     ClusterSentinel2Dataset,
     SegmentationSentinel2Dataset,
+    SEN12MSDataset,
 )
 from .samplers import EpochSampler, InfiniteSampler, ShardedInfiniteSampler
 
@@ -76,6 +77,10 @@ def _parse_dataset_str(dataset_str: str):
         class_ = SegmentationSentinel2Dataset
         if "split" in kwargs:
             kwargs["split"] = SegmentationSentinel2Dataset.Split[kwargs["split"]]
+    elif name == "Multimodality":
+        class_ = SEN12MSDataset
+        if "split" in kwargs:
+            kwargs["split"] = SEN12MSDataset.Split[kwargs["split"]]
     else:
         raise ValueError(f'Unsupported dataset "{name}"')
 
@@ -109,6 +114,42 @@ def make_dataset(
     # Aggregated datasets do not expose (yet) these attributes, so add them.
     if not hasattr(dataset, "transform"):
         setattr(dataset, "transform", transform)
+    if not hasattr(dataset, "target_transform"):
+        setattr(dataset, "target_transform", target_transform)
+
+    return dataset
+
+
+def make_dataset_multimodal(
+    *,
+    dataset_str: str,
+    s1_transform: Optional[Callable] = None,
+    s2_transform: Optional[Callable] = None,
+    target_transform: Optional[Callable] = None,
+):
+    """
+    Creates a dataset with the specified parameters.
+
+    Args:
+        dataset_str: A dataset string description (e.g. ImageNet:split=TRAIN).
+        transform: A transform to apply to images.
+        target_transform: A transform to apply to targets.
+
+    Returns:
+        The created dataset.
+    """
+    logger.info(f'using dataset: "{dataset_str}"')
+
+    class_, kwargs = _parse_dataset_str(dataset_str)
+    dataset = class_(s1_transform=s1_transform, s2_transform=s2_transform, target_transform=target_transform, **kwargs)
+
+    logger.info(f"# of dataset samples: {len(dataset):,d}")
+
+    # Aggregated datasets do not expose (yet) these attributes, so add them.
+    if not hasattr(dataset, "s1_transform"):
+        setattr(dataset, "s1_transform", s1_transform)
+    if not hasattr(dataset, "s2_transform"):
+        setattr(dataset, "s2_transform", s2_transform)
     if not hasattr(dataset, "target_transform"):
         setattr(dataset, "target_transform", target_transform)
 
