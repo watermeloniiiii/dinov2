@@ -134,8 +134,10 @@ class SSLMetaArch(nn.Module):
         assert n_global_crops == 2
         n_local_crops = self.cfg.crops.local_crops_number
 
-        global_crops = images["collated_global_crops"].cuda(non_blocking=True)
-        local_crops = images["collated_local_crops"].cuda(non_blocking=True)
+        global_crops_s1 = images["collated_global_crops_s1"].cuda(non_blocking=True)
+        local_crops_s1 = images["collated_local_crops_s1"].cuda(non_blocking=True)
+        global_crops_s2 = images["collated_global_crops_s2"].cuda(non_blocking=True)
+        local_crops_s2 = images["collated_local_crops_s2"].cuda(non_blocking=True)
 
         masks = images["collated_masks"].cuda(non_blocking=True)
         mask_indices_list = images["mask_indices_list"].cuda(non_blocking=True)
@@ -157,11 +159,12 @@ class SSLMetaArch(nn.Module):
         # teacher output
         @torch.no_grad()
         def get_teacher_output():
-            x, n_global_crops_teacher = (
-                global_crops,
+            s1, s2, n_global_crops_teacher = (
+                global_crops_s1,
+                global_crops_s2,
                 n_global_crops,
             )  # x.shape (128, 3, 224, 224), the bs is 64, 2 views is 128
-            teacher_backbone_output_dict = self.teacher.backbone(x, is_training=True, tag="teacher", doy=doy)
+            teacher_backbone_output_dict = self.teacher.backbone(s1, s2, is_training=True, tag="teacher", doy=doy)
             teacher_cls_tokens = teacher_backbone_output_dict["x_norm_clstoken"]  # (128, 1024)
             teacher_cls_tokens = teacher_cls_tokens.chunk(n_global_crops_teacher)  # [(64, 1024), (64, 1024))]
             # watch out: these are chunked and cat'd in reverse so A is matched to B in the global crops dino loss
@@ -254,7 +257,12 @@ class SSLMetaArch(nn.Module):
 
         loss_accumulator = 0  # for backprop
         student_global_backbone_output_dict, student_local_backbone_output_dict = self.student.backbone(
-            [global_crops, local_crops], masks=[masks, None], is_training=True, tag="student", doy=doy
+            [global_crops_s1, local_crops_s1],
+            [global_crops_s2, local_crops_s2],
+            masks=[masks, None],
+            is_training=True,
+            tag="student",
+            doy=doy,
         )
 
         inputs_for_student_head_list = []

@@ -63,7 +63,7 @@ def build_model(args, only_teacher=False, multimodal=False, img_size=224):
         if only_teacher:
             return teacher, teacher.embed_dim
         student = multimodal_vit(archs, s1=vit_kwargs_s1, s2=vit_kwargs_s2)
-        embed_dim = student.embed_dim
+        embed_dim = student.embed_dim[0]
     return student, teacher, embed_dim
 
 

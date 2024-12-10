@@ -12,12 +12,18 @@ def collate_data_and_cast(samples_list, mask_ratio_tuple, mask_probability, dtyp
 
     n_global_crops = len(samples_list[0][0]["global_crops"])
     n_local_crops = len(samples_list[0][0]["local_crops"])
-    collated_global_crops = torch.stack([s[0]["global_crops"][i] for i in range(n_global_crops) for s in samples_list])
-    collated_local_crops = torch.stack([s[0]["local_crops"][i] for i in range(n_local_crops) for s in samples_list])
+    collated_global_crops_s1 = torch.stack(
+        [s[0]["global_crops"][i] for i in range(n_global_crops) for s in samples_list]
+    )
+    collated_global_crops_s2 = torch.stack(
+        [s[1]["global_crops"][i] for i in range(n_global_crops) for s in samples_list]
+    )
+    collated_local_crops_s1 = torch.stack([s[0]["local_crops"][i] for i in range(n_local_crops) for s in samples_list])
+    collated_local_crops_s2 = torch.stack([s[1]["local_crops"][i] for i in range(n_local_crops) for s in samples_list])
     # collated_tiles = [s[2] for s in samples_list]
-    doy_list = torch.stack([torch.tensor(s[2]) for s in samples_list])
+    doy_list = torch.stack([torch.tensor(s[3]) for s in samples_list])
 
-    B = len(collated_global_crops)
+    B = len(collated_global_crops_s1)
     N = n_tokens
     n_samples_masked = int(B * mask_probability)
     probs = torch.linspace(*mask_ratio_tuple, n_samples_masked + 1)  # what does this do??
@@ -42,13 +48,15 @@ def collate_data_and_cast(samples_list, mask_ratio_tuple, mask_probability, dtyp
     # [3723], which is the number of masked patches, the weight is the portion of masked patches for each batch
 
     return {
-        "collated_global_crops": collated_global_crops.to(dtype),
-        "collated_local_crops": collated_local_crops.to(dtype),
+        "collated_global_crops_s1": collated_global_crops_s1.to(dtype),
+        "collated_local_crops_s1": collated_local_crops_s1.to(dtype),
+        "collated_global_crops_s2": collated_global_crops_s2.to(dtype),
+        "collated_local_crops_s2": collated_local_crops_s2.to(dtype),
         "collated_masks": collated_masks,
         "mask_indices_list": mask_indices_list,
         "masks_weight": masks_weight,
         "upperbound": upperbound,
         "n_masked_patches": torch.full((1,), fill_value=mask_indices_list.shape[0], dtype=torch.long),
         # "tile": collated_tiles,
-        "day_of_the_year": doy_list
+        "day_of_the_year": doy_list,
     }

@@ -184,15 +184,12 @@ class DinoVisionTransformer(nn.Module):
         bs, _, d_model = x.shape
         expand_scale = bs // len(doy)
         doy = doy.repeat(expand_scale)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
-        ).cuda()  # (1, d_model // 2)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)).cuda()  # (1, d_model // 2)
         pe = torch.zeros(bs, 1, d_model, dtype=x.dtype).cuda()
         pe[:, :, 0::2] = torch.sin(doy.unsqueeze(1).repeat(1, d_model // 2) * div_term).unsqueeze(1)
         pe[:, :, 1::2] = torch.cos(doy.unsqueeze(1).repeat(1, d_model // 2) * div_term).unsqueeze(1)
         self.register_buffer("pe", pe)
         return pe
-
 
     def interpolate_pos_encoding(self, x, w, h):
         previous_dtype = x.dtype
@@ -230,12 +227,12 @@ class DinoVisionTransformer(nn.Module):
 
     def prepare_tokens_with_masks(self, x, masks=None, tag=None, doy=None):
         B, nc, w, h = x.shape
-        x = self.patch_embed(x) # (bs, 1024, 768)， 1024=32*32, denotes a 512*512 image has 1024 16*16 patches
+        x = self.patch_embed(x)  # (bs, 1024, 768)， 1024=32*32, denotes a 512*512 image has 1024 16*16 patches
         if masks is not None:
             x = torch.where(masks.unsqueeze(-1), self.mask_token.to(x.dtype).unsqueeze(0), x)
 
-        x = torch.cat((self.cls_token.expand(x.shape[0], -1, -1), x), dim=1) # (bs, 1025, 768)
-        x = x + self.interpolate_pos_encoding(x, w, h) # (bs, 1025, 768)
+        x = torch.cat((self.cls_token.expand(x.shape[0], -1, -1), x), dim=1)  # (bs, 1025, 768)
+        x = x + self.interpolate_pos_encoding(x, w, h)  # (bs, 1025, 768)
         x = x + self.temporal_encoding(x, doy)
 
         if self.register_tokens is not None:
@@ -321,7 +318,7 @@ class DinoVisionTransformer(nn.Module):
         reshape: bool = False,
         return_class_token: bool = False,
         norm=True,
-        doy=None
+        doy=None,
     ) -> Tuple[Union[torch.Tensor, Tuple[torch.Tensor]]]:
         if self.chunked_blocks:
             outputs = self._get_intermediate_layers_chunked(x, n, doy=doy)
@@ -358,10 +355,9 @@ class DinoVisionTransformer(nn.Module):
                             x = nested_blk(x)
                         else:
                             return nested_blk(x, True)
-                        
 
-    def forward(self, *args, is_training=False, **kwargs):
-        ret = self.forward_features(*args, **kwargs)
+    def forward(self, x, masks=None, is_training=False, tag="", doy=None):
+        ret = self.forward_features(x, masks, tag, doy)
         if is_training:
             return ret
         else:

@@ -251,7 +251,7 @@ def do_train(cfg, model, resume=False):
         max_iter,
         start_iter,
     ):
-        current_batch_size = data["collated_global_crops"].shape[0] / 2
+        current_batch_size = data["collated_global_crops_s1"].shape[0] / 2
         if iteration > max_iter:
             return
 

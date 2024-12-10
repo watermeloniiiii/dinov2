@@ -101,8 +101,8 @@ class SEN12MSDataset(Dataset):
     def __getitem__(self, index) -> None:
         s1_tile, s2_tile = self.file_lst[index]
         date = self._str_2_doy(s1_tile.split("/")[-1].split("_")[5])
-        s1 = rasterio.open(s1_tile).read()
-        s2 = rasterio.open(s2_tile).read().astype(np.float32)
+        s1 = rasterio.open(s1_tile).read().transpose(1, 2, 0)
+        s2 = rasterio.open(s2_tile).read().astype(np.float32).transpose(1, 2, 0)
         if isinstance(s1, np.ndarray):
             transform_2_tensor = transforms.Compose(
                 [transforms.v2.ToImageTensor(), transforms.ConvertImageDtype(torch.float)]

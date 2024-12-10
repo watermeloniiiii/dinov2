@@ -1,7 +1,7 @@
 # this corresponds to the default config
 train:
   dataset_path: Multimodality:split=TRAIN:root=/NAS3/Members/linchenxi/projects/foundation_model/sen12ms
-  batch_size_per_gpu: 24
+  batch_size_per_gpu: 64
   num_workers: 5
   multimodal: true
 student:
