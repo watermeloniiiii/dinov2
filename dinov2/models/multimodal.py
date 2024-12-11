@@ -13,16 +13,33 @@ logger = logging.getLogger("dinov2")
 
 
 class multimodal_vit(nn.Module):
-    def __init__(self, archs, **kwargs):
+    def __init__(self, archs, args, teacher=False, **kwargs):
         super().__init__()
         self.modal_dict = nn.ModuleDict()
         self.embed_dim = []
         for (modal_name, modal_arch), modal_args in zip(archs.items(), kwargs.values()):
-            model = vits.__dict__[modal_arch](**modal_args)
+            if teacher:
+                model = vits.__dict__[modal_arch](**modal_args)
+            else:
+                model = vits.__dict__[modal_arch](
+                    **modal_args,
+                    drop_path_rate=args.drop_path_rate,
+                    drop_path_uniform=args.drop_path_uniform,
+                )
             self.modal_dict[modal_name] = model
             self.embed_dim.append(model.embed_dim)
-        self.cls_fuse = nn.Linear(sum(self.embed_dim), self.embed_dim[0])
-        self.patch_fuse = nn.Linear(sum(self.embed_dim), self.embed_dim[0])
+        self.cls_fuse = nn.Sequential(
+            nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
+            nn.LayerNorm(2 * sum(self.embed_dim)),
+            nn.GELU(),
+            nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
+        )
+        self.patch_fuse = nn.Sequential(
+            nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
+            nn.LayerNorm(2 * sum(self.embed_dim)),
+            nn.GELU(),
+            nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
+        )
 
     def forward(self, s1, s2, is_training=True, tag="teacher", doy=None, masks=None):
         s1_out = self.modal_dict["s1"](s1, is_training=is_training, tag=tag, doy=doy, masks=masks)
@@ -35,6 +52,8 @@ class multimodal_vit(nn.Module):
             out["x_norm_patchtokens"] = self.patch_fuse(
                 torch.cat([s1_out["x_norm_patchtokens"], s2_out["x_norm_patchtokens"]], dim=-1)
             )
+            # out["x_norm_clstoken"] = torch.cat([s1_out["x_norm_clstoken"], s2_out["x_norm_clstoken"]], dim=-1)
+            # out["x_norm_patchtokens"] = torch.cat([s1_out["x_norm_patchtokens"], s2_out["x_norm_patchtokens"]], dim=-1)
             return out
         else:
             out_global, out_local = {}, {}
@@ -50,4 +69,16 @@ class multimodal_vit(nn.Module):
             out_local["x_norm_patchtokens"] = self.patch_fuse(
                 torch.cat([s1_out[1]["x_norm_patchtokens"], s2_out[1]["x_norm_patchtokens"]], dim=-1)
             )
+            # out_global["x_norm_clstoken"] = torch.cat(
+            #     [s1_out[0]["x_norm_clstoken"], s2_out[0]["x_norm_clstoken"]], dim=-1
+            # )
+            # out_global["x_norm_patchtokens"] = torch.cat(
+            #     [s1_out[0]["x_norm_patchtokens"], s2_out[0]["x_norm_patchtokens"]], dim=-1
+            # )
+            # out_local["x_norm_clstoken"] = torch.cat(
+            #     [s1_out[1]["x_norm_clstoken"], s2_out[1]["x_norm_clstoken"]], dim=-1
+            # )
+            # out_local["x_norm_patchtokens"] = torch.cat(
+            #     [s1_out[1]["x_norm_patchtokens"], s2_out[1]["x_norm_patchtokens"]], dim=-1
+            # )
             return out_global, out_local
