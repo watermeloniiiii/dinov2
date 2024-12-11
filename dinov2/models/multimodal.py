@@ -1,7 +1,8 @@
+import argparse
 from functools import partial
 import math
 import logging
-from typing import Sequence, Tuple, Union, Callable
+from typing import Sequence, Tuple, Union, Callable, Dict, Literal
 
 import torch
 import torch.nn as nn
@@ -13,7 +14,26 @@ logger = logging.getLogger("dinov2")
 
 
 class multimodal_vit(nn.Module):
-    def __init__(self, archs, args, teacher=False, **kwargs):
+    def __init__(
+        self,
+        archs: Dict,
+        args: argparse.Namespace,
+        fuse_alg: Literal["linear", "xattn"] = "linear",
+        teacher: bool = False,
+        **kwargs
+    ):
+        """
+        Parameters
+        ----------
+        archs: Dict
+            The dictionary containing the model name and model architecture, e.g., {"s1": "vit_base"}. The architecture can be specified in the config file. By default, four archtectures are provided: vit_small, vit_base, vit_large and vit_giant2, see "./vision_transformer.py" for more details
+        args: argparse.Namespace
+            All arguments in the config file
+        fuse_alg: Literal["linear", "xattn"]
+            The way to fuse different modalities. By default we use linear projection
+        teacher: bool
+            Whether it is the teacher network, by default False
+        """
         super().__init__()
         self.modal_dict = nn.ModuleDict()
         self.embed_dim = []
@@ -28,18 +48,21 @@ class multimodal_vit(nn.Module):
                 )
             self.modal_dict[modal_name] = model
             self.embed_dim.append(model.embed_dim)
-        self.cls_fuse = nn.Sequential(
-            nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
-            nn.LayerNorm(2 * sum(self.embed_dim)),
-            nn.GELU(),
-            nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
-        )
-        self.patch_fuse = nn.Sequential(
-            nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
-            nn.LayerNorm(2 * sum(self.embed_dim)),
-            nn.GELU(),
-            nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
-        )
+        if fuse_alg == "linear":
+            self.cls_fuse = nn.Sequential(
+                nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
+                nn.LayerNorm(2 * sum(self.embed_dim)),
+                nn.GELU(),
+                nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
+            )
+            self.patch_fuse = nn.Sequential(
+                nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
+                nn.LayerNorm(2 * sum(self.embed_dim)),
+                nn.GELU(),
+                nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
+            )
+        else:
+            raise NotImplementedError("The cross-attention fusion has not been implemented.")
 
     def forward(self, s1, s2, is_training=True, tag="teacher", doy=None, masks=None):
         s1_out = self.modal_dict["s1"](s1, is_training=is_training, tag=tag, doy=doy, masks=masks)
@@ -52,8 +75,6 @@ class multimodal_vit(nn.Module):
             out["x_norm_patchtokens"] = self.patch_fuse(
                 torch.cat([s1_out["x_norm_patchtokens"], s2_out["x_norm_patchtokens"]], dim=-1)
             )
-            # out["x_norm_clstoken"] = torch.cat([s1_out["x_norm_clstoken"], s2_out["x_norm_clstoken"]], dim=-1)
-            # out["x_norm_patchtokens"] = torch.cat([s1_out["x_norm_patchtokens"], s2_out["x_norm_patchtokens"]], dim=-1)
             return out
         else:
             out_global, out_local = {}, {}
@@ -69,16 +90,4 @@ class multimodal_vit(nn.Module):
             out_local["x_norm_patchtokens"] = self.patch_fuse(
                 torch.cat([s1_out[1]["x_norm_patchtokens"], s2_out[1]["x_norm_patchtokens"]], dim=-1)
             )
-            # out_global["x_norm_clstoken"] = torch.cat(
-            #     [s1_out[0]["x_norm_clstoken"], s2_out[0]["x_norm_clstoken"]], dim=-1
-            # )
-            # out_global["x_norm_patchtokens"] = torch.cat(
-            #     [s1_out[0]["x_norm_patchtokens"], s2_out[0]["x_norm_patchtokens"]], dim=-1
-            # )
-            # out_local["x_norm_clstoken"] = torch.cat(
-            #     [s1_out[1]["x_norm_clstoken"], s2_out[1]["x_norm_clstoken"]], dim=-1
-            # )
-            # out_local["x_norm_patchtokens"] = torch.cat(
-            #     [s1_out[1]["x_norm_patchtokens"], s2_out[1]["x_norm_patchtokens"]], dim=-1
-            # )
             return out_global, out_local
