@@ -14,7 +14,6 @@ from .datasets import (
     ImageNet,
     ImageNet22k,
     PretrainSentinel2Dataset,
-    ClusterSentinel2Dataset,
     SegmentationSentinel2Dataset,
     SEN12MSDataset,
 )
@@ -69,10 +68,6 @@ def _parse_dataset_str(dataset_str: str):
         class_ = PretrainSentinel2Dataset
         if "split" in kwargs:
             kwargs["split"] = PretrainSentinel2Dataset.Split[kwargs["split"]]
-    elif name == "ClusterSentinel2":
-        class_ = ClusterSentinel2Dataset
-        if "split" in kwargs:
-            kwargs["split"] = ClusterSentinel2Dataset.Split[kwargs["split"]]
     elif name == "SegmentationSentinel2":
         class_ = SegmentationSentinel2Dataset
         if "split" in kwargs:

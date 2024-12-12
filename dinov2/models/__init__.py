@@ -59,10 +59,10 @@ def build_model(args, only_teacher=False, multimodal=False, img_size=224):
         vit_kwargs_s2 = vit_kwargs_s1.copy()
         vit_kwargs_s2["in_chans"] = args.in_chans_s2
         archs = {"s1": arch_s1, "s2": arch_s2}
-        teacher = multimodal_vit(archs, args, teacher=True, s1=vit_kwargs_s1, s2=vit_kwargs_s2)
+        teacher = multimodal_vit(archs, args, fuse_alg=args.fuse_alg, teacher=True, s1=vit_kwargs_s1, s2=vit_kwargs_s2)
         if only_teacher:
             return teacher, teacher.embed_dim
-        student = multimodal_vit(archs, args, teacher=False, s1=vit_kwargs_s1, s2=vit_kwargs_s2)
+        student = multimodal_vit(archs, args, fuse_alg=args.fuse_alg, teacher=False, s1=vit_kwargs_s1, s2=vit_kwargs_s2)
         embed_dim = student.embed_dim[0]
     return student, teacher, embed_dim
 

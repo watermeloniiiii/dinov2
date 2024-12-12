@@ -12,6 +12,11 @@ student:
   num_register_tokens: 2
   in_chans_s1: 2
   in_chans_s2: 13
+  fuse_alg: xattn # either "linear" or "xattn"
+  xattn:
+    nhead: 3
+    nlayer: 3
+    dropout: 0
 crops:
   global_crops_size: 192
   local_crops_size: 96

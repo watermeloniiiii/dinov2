@@ -8,5 +8,5 @@ from .loaders import make_data_loader, make_dataset, SamplerType, make_dataset_m
 from .collate import collate_data_and_cast
 from .masking import MaskingGenerator
 from .augmentations import DataAugmentationDINO
-from .augmentations_rs import DataAugmentationDINORS
-from .augmentations_ms12 import DataAugmentationDINO_MS12
+from .augmentations_satlas import DataAugmentationDINORS
+from .augmentations_sen12ms import DataAugmentationDINO_MS12

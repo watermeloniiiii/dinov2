@@ -29,7 +29,7 @@ master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
 
 export MASTER_ADDR=$master_addr
 echo "master addr="${MASTER_ADDR}
-srun bash train_slurm.sh
+srun bash dinov2/bash/train_slurm.sh
 
 # bash run_your_job.sh
 # change "public" to v100 to use v100
