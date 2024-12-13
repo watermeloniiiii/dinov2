@@ -1,33 +1,23 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-#
-# This source code is licensed under the Apache License, Version 2.0
-# found in the LICENSE file in the root directory of this source tree.
+# @author: Chenxi Lin
 
-import csv
 from enum import Enum
-import logging
+import numpy as np
+import json
 import os
-from typing import Callable, List, Optional, Tuple, Union, Any
+import rasterio
+from shutil import copyfile
 import torch
 from torch.utils.data import Dataset
-from torchvision.transforms import v2
 from torchvision import transforms
-from imageio import imread
-import json
-from io import BytesIO
-from typing import Any
+from typing import Callable, List, Optional, Tuple, Union, Any
 
-from PIL import Image
-import numpy as np
-import shutil
-from multiprocessing.pool import ThreadPool
-import rasterio
+NUM_DAY_PER_MONTH = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 
 
 class _Split(Enum):
     TRAIN = "train"
     VAL = "val"
-    TEST = "test"  # NOTE: torchvision does not support the test split
+    TEST = "test"
 
     @property
     def length(self) -> int:
@@ -37,25 +27,6 @@ class _Split(Enum):
             _Split.TEST: 0,
         }
         return split_lengths[self]
-
-    def get_dirname(self, class_id: Optional[str] = None) -> str:
-        return self.value if class_id is None else os.path.join(self.value, class_id)
-
-    def get_image_relpath(self, actual_index: int, class_id: Optional[str] = None) -> str:
-        dirname = self.get_dirname(class_id)
-        if self == _Split.TRAIN:
-            basename = f"{class_id}_{actual_index}"
-        else:  # self in (_Split.VAL, _Split.TEST):
-            basename = f"ILSVRC2012_{self.value}_{actual_index:08d}"
-        return os.path.join(dirname, basename + ".JPEG")
-
-    def parse_image_relpath(self, image_relpath: str) -> Tuple[str, int]:
-        assert self != _Split.TEST
-        dirname, filename = os.path.split(image_relpath)
-        class_id = os.path.split(dirname)[-1]
-        basename, _ = os.path.splitext(filename)
-        actual_index = int(basename.split("_")[-1])
-        return class_id, actual_index
 
 
 class SEN12MSDataset(Dataset):
@@ -91,10 +62,9 @@ class SEN12MSDataset(Dataset):
     def _str_2_doy(self, date):
         month = int(date[5:7])
         day = int(date[8:])
-        num_day_per_month = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
         doy = 0
         for m in range(1, month):
-            doy += num_day_per_month[m]
+            doy += NUM_DAY_PER_MONTH[m]
         doy += day
         return doy
 
@@ -112,15 +82,6 @@ class SEN12MSDataset(Dataset):
         if self.transforms is not None:
             s1, s2, target = self.transforms(s1, s2, 1)
         return s1, s2, target, date
-
-    def _composite(self, dirs):
-        res = []
-        for dir in dirs:
-            img = np.array(Image.open(dir))
-            if len(img.shape) == 2:
-                img = img[..., None]
-            res.append(img)
-        return np.concatenate([r for r in res], axis=2)
 
 
 class StandardTransform:
@@ -158,54 +119,41 @@ class StandardTransform:
 
 
 def split_dataset(root, save_dir):
-    from shutil import copyfile
+    """
+    Make training/validation dataset from original data
+    """
 
     for type in ["train", "val"]:
         for modal in ["s1", "s2"]:
             target_folder = os.path.join(save_dir, type, modal)
             if not os.path.exists(target_folder):
-                os.makedirs(target_folder)
+                os.makedirs(target_folder, exist_ok=True)
     for root, _, files in os.walk(root):
         if files and files[0].endswith(".tif"):
             modality = files[0][:2]
             if modality == "s2":
                 continue
+            counterpart_root = root.replace("S1", "S2")
+            # NOTE os.listdir() returns unordered list so have to do sorting
+            ordered_s2_lst = sorted(os.listdir(counterpart_root), key=lambda x: int(x.split(".")[0].split("_")[-1]))
             for tile in files:
+                index = tile.split(".")[0].split("_")[-1]
+
+                # ----- find S2 counterpart -----#
+                """The reason for this searching is that S1 and S2 have different acquisition date and so we cannot simply replace S1 with S2 but have to find corresonding index"""
+                counterpart = ordered_s2_lst[int(index)]
+                # --------------------------------#
+
+                # 70% training and 30% validation
                 random_flag = np.random.choice(2, 1, p=[0.7, 0.3])
-                if random_flag == 0:
-                    copyfile(os.path.join(root, tile), os.path.join(save_dir, "train", modality, tile))
-                    counterpart_root = root.replace("S1", "S2")
-                    index = tile.split(".")[0].split("_")[-1]
-                    counterpart = sorted(
-                        os.listdir(counterpart_root), key=lambda x: int(x.split(".")[0].split("_")[-1])
-                    )[int(index)]
-                    if counterpart.split(".")[0].split("_")[-1] != index:
-                        raise ValueError("S1 and S2 data do not match!")
-                    copyfile(
-                        os.path.join(counterpart_root, counterpart),
-                        os.path.join(save_dir, "train", "s2", counterpart),
-                    )
-                else:
-                    copyfile(os.path.join(root, tile), os.path.join(save_dir, "val", modality, tile))
-                    counterpart_root = root.replace("S1", "S2")
-                    index = tile.split(".")[0].split("_")[-1]
-                    counterpart = sorted(
-                        os.listdir(counterpart_root), key=lambda x: int(x.split(".")[0].split("_")[-1])
-                    )[int(index)]
-                    if counterpart.split(".")[0].split("_")[-1] != index:
-                        raise ValueError("S1 and S2 data do not match!")
-                    copyfile(
-                        os.path.join(counterpart_root, counterpart),
-                        os.path.join(save_dir, "val", "s2", counterpart),
-                    )
-
-
-def remove_empty(root):
-    from shutil import rmtree
-
-    for tile in os.listdir(root):
-        if len(os.listdir(os.path.join(root, tile))) < 6:
-            rmtree(os.path.join(root, tile))
+                SPLIT_INDEX = {0: "train", 1: "val"}
+                copyfile(os.path.join(root, tile), os.path.join(save_dir, SPLIT_INDEX[random_flag], modality, tile))
+                if counterpart.split(".")[0].split("_")[-1] != index:
+                    raise ValueError("S1 and S2 data do not match!")
+                copyfile(
+                    os.path.join(counterpart_root, counterpart),
+                    os.path.join(save_dir, SPLIT_INDEX[random_flag], "s2", counterpart),
+                )
 
 
 def calculate_mean_variance(image_folder, channels):
@@ -258,19 +206,15 @@ def dump_entries(root, output_file):
 
 
 if __name__ == "__main__":
-    # split_dataset(
-    #     "/NAS/datasets/PUBLIC_DATASETS/SEN12MS-CR-TS/",
-    #     "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms",
-    # )
-    # remove_empty("/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train")
-    # do_statistic(
-    #     "/NAS6/Members/linchenxi/projects/RS_foundation_model/satlas/train",
-    #     ["tci", "b05", "b06", "b07", "b08", "b11", "b12"],
-    # )
-    dump_entries(
-        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/val/s1",
-        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/val_all.json",
+    # Step 1. transfer the data from NAS to the target folder and split into training and validation sets
+    split_dataset(
+        "/NAS/datasets/PUBLIC_DATASETS/SEN12MS-CR-TS/",
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms",
     )
-    # dataset = SEN12MSDataset(
-    #     split=SEN12MSDataset.Split["TRAIN"], root="/NAS3/Members/linchenxi/projects/foundation_model/sen12ms"
-    # )
+
+    # Step 2. Store all samples into json files
+    for dataset in ["train", "val"]:
+        dump_entries(
+            f"/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/{dataset}/s1",
+            f"/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/{dataset}_all.json",
+        )
