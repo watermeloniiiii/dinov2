@@ -145,7 +145,7 @@ def split_dataset(root, save_dir):
                 # --------------------------------#
 
                 # 70% training and 30% validation
-                random_flag = np.random.choice(2, 1, p=[0.7, 0.3])
+                random_flag = int(np.random.choice(2, 1, p=[0.7, 0.3])[0])
                 SPLIT_INDEX = {0: "train", 1: "val"}
                 copyfile(os.path.join(root, tile), os.path.join(save_dir, SPLIT_INDEX[random_flag], modality, tile))
                 if counterpart.split(".")[0].split("_")[-1] != index:
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     # Step 1. transfer the data from NAS to the target folder and split into training and validation sets
     split_dataset(
         "/NAS/datasets/PUBLIC_DATASETS/SEN12MS-CR-TS/",
-        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms",
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms_test",
     )
 
     # Step 2. Store all samples into json files
