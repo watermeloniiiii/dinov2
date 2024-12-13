@@ -118,7 +118,7 @@ class StandardTransform:
         return "\n".join(body)
 
 
-def split_dataset(root, save_dir):
+def split_dataset(root, save_dir, ratio=0.7):
     """
     Make training/validation dataset from original data
     """
@@ -145,7 +145,7 @@ def split_dataset(root, save_dir):
                 # --------------------------------#
 
                 # 70% training and 30% validation
-                random_flag = int(np.random.choice(2, 1, p=[0.7, 0.3])[0])
+                random_flag = int(np.random.choice(2, 1, p=[ratio, 1 - ratio])[0])
                 SPLIT_INDEX = {0: "train", 1: "val"}
                 copyfile(os.path.join(root, tile), os.path.join(save_dir, SPLIT_INDEX[random_flag], modality, tile))
                 if counterpart.split(".")[0].split("_")[-1] != index:

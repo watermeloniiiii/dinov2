@@ -106,7 +106,6 @@ class multimodal_vit(nn.Module):
                 out_local["x_norm_clstoken"] = out_local["x_norm"][:, 0]
                 out_local["x_norm_patchtokens"] = out_local["x_norm"][:, self.args.num_register_tokens + 1 :]
             else:
-                print(s1_out)
                 res_global = s1_out[0]["x_norm"]
                 res_local = s1_out[1]["x_norm"]
                 for _ in range(self.nlayer):

@@ -3,71 +3,72 @@
 ## <span style=color:#4DBBD5;font-size:15px;font-weight:bold>Code Structure</span>  
 ```text
 📦bash
- ┣ 📜submit2slurm.sh                    # submit the job to slurm
- ┣ 📜train.sh                           # the bash file to run code at server with distributed training
- ┗ 📜train_slurm.sh                     # the inner bash file called by "submit2slurm.sh"
+  ┣ 📜submit2slurm.sh                    # submit the job to slurm
+  ┣ 📜train.sh                           # the bash file to run code at server with distributed training
+  ┗ 📜train_slurm.sh                     # the inner bash file called by "submit2slurm.sh"
 📦configs 
-┣ 📂eval                                # everything under this folder is unchanged
- ┃ ┣ ...    
- ┣ 📂train
- ┃ ┣ 📜vitg14.yaml                      # unchanged
- ┃ ┣ 📜vitl14.yaml                      # unchanged
- ┃ ┣ 📜vitl16_short.yaml                # unchanged
- ┃ ┣ 📜vitl16_short_multimodal.yaml     # the config for multimodal pretraining (Sen12MS)
- ┃ ┗ 📜vitl16_short_s2.yaml             # the config for unimodal pretraining (Satlas)
- ┗ 📜ssl_default_config.yaml            # unchanged, the default config for models
+  ┣ 📂eval                                # everything under this folder is unchanged
+    ┃ ┣ ...    
+  ┣ 📂train
+    ┃ ┣ 📜vitg14.yaml                      # unchanged
+    ┃ ┣ 📜vitl14.yaml                      # unchanged
+    ┃ ┣ 📜vitl16_short.yaml                # unchanged
+    ┃ ┣ 📜vitl16_short_multimodal.yaml     # the config for multimodal pretraining (Sen12MS)
+    ┃ ┗ 📜vitl16_short_s2.yaml             # the config for unimodal pretraining (Satlas)
+    ┗ 📜ssl_default_config.yaml            # unchanged, the default config for models
 📦data
-┣ 📂datasets
-┃ ┣ 📜__init__.py                       # unchanged
-┃ ┣ 📜decoders.py                       # unchanged
-┃ ┣ 📜extended.py                       # unchanged
-┃ ┣ 📜image_net.py                      # unchanged
-┃ ┣ 📜image_net_22k.py                  # unchanged
-┃ ┣ 📜sen12ms.py                        # the dataset class for Sen12MS-CR-TS 
-┃ ┣ 📜sentinel2.py                      # the dataset class for Satlas
-┃ ┗ 📜sentinel2_segmentation.py         # the children dataset class for Satlas focusing on segmentation
-┣ 📜__init__.py
-┣ 📜adapters.py                         # unchanged
-┣ 📜augmentations.py                    # unchanged
-┣ 📜augmentations_ms12.py               # the augmentation class for Sen12MS-CR-TS
-┣ 📜augmentations_satlas.py             # the augmentation class for Satlas
-┣ 📜collate.py                          # the collate function
-┣ 📜loaders.py                          # whenever having a new dataset, add it to this file
-┣ 📜masking.py                          # unchanged
-┣ 📜samplers.py                         # unchanged
-┗ 📜transforms.py                       # added some remote sensing-related functions
+  ┣ 📂datasets
+    ┣ 📂deprecated
+      ┃ ┣ 📜sentinel2.py                      # the dataset class for Satlas
+      ┃ ┗ 📜sentinel2_segmentation.py         # the children dataset class for Satlas focusing on segmentation
+    ┃ ┣ 📜__init__.py                       # unchanged
+    ┃ ┣ 📜decoders.py                       # unchanged
+    ┃ ┣ 📜extended.py                       # unchanged
+    ┃ ┣ 📜image_net.py                      # unchanged
+    ┃ ┣ 📜image_net_22k.py                  # unchanged
+    ┃ ┣ 📜sen12ms.py                        # the dataset class for Sen12MS-CR-TS 
+  ┣ 📜__init__.py
+  ┣ 📜adapters.py                         # unchanged
+  ┣ 📜augmentations.py                    # unchanged
+  ┣ 📜augmentations_ms12.py               # the augmentation class for Sen12MS-CR-TS
+  ┣ 📜augmentations_satlas.py             # the augmentation class for Satlas
+  ┣ 📜collate.py                          # the collate function
+  ┣ 📜loaders.py                          # whenever having a new dataset, add it to this file
+  ┣ 📜masking.py                          # unchanged
+  ┣ 📜samplers.py                         # unchanged
+  ┗ 📜transforms.py                       # added some remote sensing-related functions
 📦distributed                           # unchanged
-┗ 📜__init__.py
+  ┗ 📜__init__.py
 📦eval
-┣ 📂depth                               # unchanged
-┣ 📂segmentation                        # unchanged
-┣ 📂segmentation_m2f                    # unchanged
-┣ 📜__init__.py
-┣ 📜knn.py                              # unchanged
-┣ 📜linear.py                           # unchanged
-┣ 📜load_pretrained_model.py            # unchanged
-┣ 📜log_regression.py                   # unchanged
-┣ 📜metrics.py                          # unchanged
-┣ 📜segmentation.py                     # unchanged
-┣ 📜setup.py                            # unchanged
-┣ 📜utils.py                            # unchanged
-┗ 📜visualize_attention.py              # visualize the attention map of any input
+  ┣ 📂depth                               # unchanged
+  ┣ 📂segmentation                        # unchanged
+  ┣ 📂segmentation_m2f                    # unchanged
+  ┣ 📜__init__.py
+  ┣ 📜knn.py                              # unchanged
+  ┣ 📜linear.py                           # unchanged
+  ┣ 📜load_pretrained_model.py            # unchanged
+  ┣ 📜log_regression.py                   # unchanged
+  ┣ 📜metrics.py                          # unchanged
+  ┣ 📜segmentation.py                     # unchanged
+  ┣ 📜setup.py                            # unchanged
+  ┣ 📜utils.py                            # unchanged
+  ┗ 📜visualize_attention.py              # visualize the attention map of any input
 📦fsdp                                  # unchanged
 📦hub                                   # unchanged
 📦layers                                # unchanged
 📦logging_dinov2                        # unchanged
 📦loss                                  # unchanged
 📦models
- ┣ 📜__init__.py
- ┣ 📜multimodal.py                      # the multimodal model fusing S1 and S2
- ┗ 📜vision_transformer.py              # the original ViT model, added temporal embedding
+  ┣ 📜__init__.py
+  ┣ 📜multimodal.py                      # the multimodal model fusing S1 and S2
+  ┗ 📜vision_transformer.py              # the original ViT model, added temporal embedding
 📦run                                   # unchanged
 📦train
- ┣ 📜__init__.py
- ┣ 📜ssl_meta_arch.py                   # the main framework of DINOv2
- ┣ 📜train.py                           # the entrance to train the unimodal DINOv2
- ┗ 📜train_multimodal.py                # the entrance to train the mutlimodal DINOv2
-📦utils                                 # unchanged                     
+  ┣ 📜__init__.py
+  ┣ 📜ssl_meta_arch.py                   # the main framework of DINOv2
+  ┣ 📜train.py                           # the entrance to train the unimodal DINOv2
+  ┗ 📜train_multimodal.py                # the entrance to train the mutlimodal DINOv2
+📦utils                                  # unchanged                     
 ```
 --- 
 ## <span style=color:#4DBBD5;font-size:15px;font-weight:bold>Start the training</span>  
@@ -126,5 +127,42 @@ ibot:
   mask_ratio_min_max:
   - 0.1
   - 0.3
+```
+</span>
+
+---
+
+## <span style=color:#4DBBD5;font-size:15px;font-weight:bold>Sen12MS Dataset</span>  
+<span style=font-size:13px;color:#00A087>
+
+As the originally downloaded **Sen12MS-CR-TS** dataset is stored in NAS and does not follow a DL-friendly format (e.g,. train/vali/test sets), the `split_dataset` will find correlated S1 and S2 tile and save them into the target folder.The second step is to store all sample paths into a JSON file to make efficient retrieval. 
+
+```python
+    # Step 1. transfer the data from NAS to the target folder and split into training and validation sets
+    split_dataset(
+        "/NAS/datasets/PUBLIC_DATASETS/SEN12MS-CR-TS/",
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms",
+    )
+
+    # Step 2. Store all samples into json files
+    for dataset in ["train", "val"]:
+        dump_entries(
+            f"/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/{dataset}/s1",
+            f"/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/{dataset}_all.json",
+        )
+```
+The JSON file will look like:
+```text
+  [
+    [
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/val/s1/s1_ROIs2017_32_ImgNo_4_2018-02-28_patch_12.tif",
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/val/s2/s2_ROIs2017_32_ImgNo_4_2018-02-24_patch_12.tif"
+    ],
+    [
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/val/s1/s1_ROIs2017_32_ImgNo_4_2018-02-28_patch_11.tif",
+        "/NAS3/Members/linchenxi/projects/foundation_model/sen12ms/val/s2/s2_ROIs2017_32_ImgNo_4_2018-02-24_patch_11.tif"
+    ],
+    ...
+  ]
 ```
 </span>

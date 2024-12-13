@@ -132,7 +132,7 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
 def do_test(cfg, model, iteration):
     new_state_dict = model.teacher.state_dict()
 
-    if distributed.is_main_process():
+    if torch.distributed.get_rank() == 0:
         iterstring = str(iteration)
         eval_dir = os.path.join(cfg.train.output_dir, "eval", iterstring)
         os.makedirs(eval_dir, exist_ok=True)
