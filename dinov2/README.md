@@ -1,5 +1,7 @@
 # DINOv2 for Multimodal Remote Sensing Foundation Model Per-training
-<br></br>  
+## <span style=color:#4DBBD5;font-size:15px;font-weight:bold>Overview</span>
+The repo is modified on top of the Meta DINOv2 repo by adding multimodal modules. The original DINOv2 uses a single vision transformer to process unimodal data whereas we added a fusion module to integrate both S1 and S2 imagery either through linear fusion or cross-attention.  
+
 ## <span style=color:#4DBBD5;font-size:15px;font-weight:bold>Code Structure</span>  
 ```text
 📦bash
@@ -77,7 +79,7 @@
 To start the pre-training at servers, e.g., 185, run `/dinov2/dinov2/bash/train.sh`
 It looks like the following but one can add more arguments, see `/dinov2/train/train_multimodal.py` for more details
 ```python
-export CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export PYTHONPATH=/NAS3/Members/linchenxi/dinov2
 torchrun \
     --rdzv-backend=c10d \
@@ -166,3 +168,44 @@ The JSON file will look like:
   ]
 ```
 </span>
+
+## <span style=color:#4DBBD5;font-size:15px;font-weight:bold>Multimodal Fusion</span>
+<span style=font-size:13px;color:#00A087>
+We have provided two approaches to fuse the multimodal data.
+
+1. **Linear fusion**. The linear fusion module contains two linear projections to first project the concatanated features to a higher dimension (by default four times of the embedding dimension) and then to the original embedding dimension.
+
+```python
+self.linear_fuse = nn.Sequential(
+      nn.Linear(sum(self.embed_dim), 2 * sum(self.embed_dim)),
+      nn.LayerNorm(2 * sum(self.embed_dim)),
+      nn.GELU(),
+      nn.Linear(2 * sum(self.embed_dim), self.embed_dim[0]),
+  )
+if self.fuse_alg == "linear":
+      out["x_norm"] = self.linear_fuse(torch.cat([s1_out["x_norm"], s2_out["x_norm"]], dim=-1))
+      out["x_norm_clstoken"] = out["x_norm"][:, 0]
+      out["x_norm_patchtokens"] = out["x_norm"][:, self.args.num_register_tokens + 1 :]
+```
+
+2. **Cross-attention**. In the cross-attention, we use feature from S1 as the query and feature from S2 as the key and value, but one can switch the two. 
+
+```python
+def cross_attention(self, q, k, v):
+    res1 = q
+    res2 = self.attn(query=q, key=k, value=v)[0]
+    res1 = res1 + self.dropout1(res2)
+    res1 = self.norm1(res1)
+    res2 = self.linear2(self.dropout(self.activation(self.linear1(res1))))
+    res1 = res1 + self.dropout3(res2)
+    res1 = self.norm3(res1)
+    return res1
+  
+res = s1_out["x_norm"]
+for _ in range(self.nlayer):
+    q = res
+    res = self.cross_attention(q, s2_out["x_norm"], s2_out["x_norm"])
+out["x_norm_clstoken"] = res[:, 0]
+out["x_norm_patchtokens"] = res[:, self.args.num_register_tokens + 1 :]
+```
+</span>  

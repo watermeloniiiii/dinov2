@@ -13,8 +13,6 @@ from torch.utils.data import Sampler
 from .datasets import (
     ImageNet,
     ImageNet22k,
-    PretrainSentinel2Dataset,
-    SegmentationSentinel2Dataset,
     SEN12MSDataset,
 )
 from .samplers import EpochSampler, InfiniteSampler, ShardedInfiniteSampler
@@ -64,14 +62,6 @@ def _parse_dataset_str(dataset_str: str):
             kwargs["split"] = ImageNet.Split[kwargs["split"]]
     elif name == "ImageNet22k":
         class_ = ImageNet22k
-    elif name == "Sentinel2":
-        class_ = PretrainSentinel2Dataset
-        if "split" in kwargs:
-            kwargs["split"] = PretrainSentinel2Dataset.Split[kwargs["split"]]
-    elif name == "SegmentationSentinel2":
-        class_ = SegmentationSentinel2Dataset
-        if "split" in kwargs:
-            kwargs["split"] = SegmentationSentinel2Dataset.Split[kwargs["split"]]
     elif name == "Multimodality":
         class_ = SEN12MSDataset
         if "split" in kwargs:

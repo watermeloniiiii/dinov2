@@ -65,7 +65,7 @@ SEN12MS_S2_MEAN = [
     )
 ]
 SEN12MS_S2_STD = [
-    math.sqrt(a * 1000**2)
+    math.sqrt(a * 10**2)
     for a in list(
         [
             5.39760919,
@@ -85,7 +85,7 @@ SEN12MS_S2_STD = [
     )
 ]
 
-SEN12MS_S1_MEAN = [a * 10 for a in list([-1.14150634 - 1.91918201])]
+SEN12MS_S1_MEAN = [a * 10 for a in list([-1.14150634, -1.91918201])]
 SEN12MS_S1_STD = [math.sqrt(a * 10**2) for a in list([0.21155498, 0.39639459])]
 
 

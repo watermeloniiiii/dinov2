@@ -12,7 +12,7 @@ student:
   num_register_tokens: 2
   in_chans_s1: 2
   in_chans_s2: 13
-  fuse_alg: linear # either "linear" or "xattn"
+  fuse_alg: xattn # either "linear" or "xattn"
   xattn:
     nhead: 3
     nlayer: 3

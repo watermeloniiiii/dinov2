@@ -68,6 +68,7 @@ def build_model(args, only_teacher=False, multimodal=False, img_size=224):
 
 
 def build_model_from_cfg(cfg, only_teacher=False):
+    multimodal = cfg.train.multimodal if "multimodal" in cfg.train else False
     return build_model(
-        cfg.student, only_teacher=only_teacher, multimodal=cfg.train.multimodal, img_size=cfg.crops.global_crops_size
+        cfg.student, only_teacher=only_teacher, multimodal=multimodal, img_size=cfg.crops.global_crops_size
     )

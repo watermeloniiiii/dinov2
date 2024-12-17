@@ -5,7 +5,6 @@ from typing import Dict, Literal
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
-from torch.nn.init import trunc_normal_
 from . import vision_transformer as vits
 
 logger = logging.getLogger("dinov2")
@@ -111,8 +110,6 @@ class multimodal_vit(nn.Module):
                 for _ in range(self.nlayer):
                     q_global = res_global
                     res_global = self.cross_attention(q_global, s2_out[0]["x_norm"], s2_out[0]["x_norm"])
-                    q_local = res_local
-                    res_cls_local = self.cross_attention(q_local, s2_out[1]["x_norm"], s2_out[1]["x_norm"])
                     q_local = res_local
                     res_local = self.cross_attention(q_local, s2_out[1]["x_norm"], s2_out[1]["x_norm"])
                 out_global["x_norm_clstoken"] = res_global[:, 0]
